@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+ai-service/venv/
+
+# Biometric / private data
+data/embeddings/
+data/students/
+
+# Test images
+data/test_images/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment files
+.env
