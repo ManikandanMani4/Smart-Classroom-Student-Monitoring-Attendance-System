@@ -1,0 +1,1667 @@
+/* =========================================================
+   SMART CLASSROOM
+   HOD DASHBOARD - COMPLETE CSS
+========================================================= */
+
+/* =========================================================
+   GLOBAL RESET
+========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #f5f7fc;
+  color: #111827;
+
+  font-family:
+    "Plus Jakarta Sans",
+    Inter,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+
+/* =========================================================
+   MAIN LAYOUT
+========================================================= */
+
+.hod-dashboard-layout {
+  position: relative;
+
+  width: 100%;
+  min-height: 100vh;
+
+  background: #f5f7fc;
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.hod-sidebar {
+  position: fixed !important;
+
+  top: 0 !important;
+  left: 0 !important;
+
+  width: 297px !important;
+  height: 100vh !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  background:
+    linear-gradient(
+      180deg,
+      #271b58 0%,
+      #21164f 100%
+    ) !important;
+
+  z-index: 99999 !important;
+
+  overflow: hidden;
+
+  visibility: visible !important;
+  opacity: 1 !important;
+
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   BRAND
+========================================================= */
+
+.hod-brand {
+  width: 100%;
+  height: 103px;
+
+  padding: 0 22px;
+
+  display: flex;
+  align-items: center;
+
+  flex-shrink: 0;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.hod-brand-icon {
+  width: 56px;
+  height: 56px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 13px;
+
+  background: #eee9ff;
+  color: #5b35d5;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  line-height: 1;
+}
+
+.hod-brand-text {
+  min-width: 0;
+  margin-left: 13px;
+}
+
+.hod-brand-text h2 {
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: 17px;
+  font-weight: 800;
+
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+
+  white-space: nowrap;
+}
+
+.hod-brand-text span {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #bcb2e8;
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 1.6px;
+  line-height: 1;
+}
+
+
+/* =========================================================
+   LOGGED IN AS
+========================================================= */
+
+.hod-role {
+  width: 100%;
+
+  padding: 23px 27px 11px;
+
+  flex-shrink: 0;
+}
+
+.hod-role-label {
+  margin-bottom: 7px;
+
+  color: #aaa1d4;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 1.5px;
+  line-height: 1.2;
+}
+
+.hod-role-name {
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  line-height: 1.3;
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+.hod-navigation {
+  width: 100%;
+
+  flex: 1;
+  min-height: 0;
+
+  padding: 11px 14px 15px;
+
+  overflow-y: auto;
+}
+
+.hod-navigation::-webkit-scrollbar {
+  width: 5px;
+}
+
+.hod-navigation::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hod-navigation::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+}
+
+.hod-navigation::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+
+/* =========================================================
+   NAVIGATION ITEM
+========================================================= */
+
+.hod-nav-item {
+  position: relative;
+
+  width: 100%;
+  min-height: 53px;
+
+  margin: 0 0 4px 0;
+  padding: 0 19px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: transparent;
+
+  color: #d2cae8;
+
+  font-family: inherit;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  line-height: 1;
+
+  text-align: left;
+
+  cursor: pointer;
+  outline: none;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+.hod-nav-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+}
+
+.hod-nav-item:active {
+  transform: scale(0.99);
+}
+
+.hod-nav-item:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   ACTIVE NAVIGATION
+========================================================= */
+
+.hod-nav-item.active {
+  background:
+    linear-gradient(
+      90deg,
+      #6336df 0%,
+      #5b31d5 100%
+    );
+
+  color: #ffffff;
+
+  font-weight: 700;
+
+  box-shadow:
+    0 7px 17px
+    rgba(91, 53, 213, 0.24);
+}
+
+
+/* =========================================================
+   NAV ICON
+========================================================= */
+
+.hod-nav-icon {
+  width: 24px;
+  height: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  color: inherit;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  line-height: 1;
+}
+
+.hod-nav-label {
+  display: block;
+
+  overflow: hidden;
+
+  color: inherit;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   SIDEBAR BOTTOM
+========================================================= */
+
+.hod-sidebar-bottom {
+  width: 100%;
+
+  padding: 14px 15px;
+
+  flex-shrink: 0;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+
+/* =========================================================
+   HOD USER
+========================================================= */
+
+.hod-user {
+  width: 100%;
+
+  padding: 8px 7px;
+
+  display: flex;
+  align-items: center;
+}
+
+.hod-avatar {
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: #eee9ff;
+  color: #5b35d5;
+
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.hod-user-info {
+  min-width: 0;
+  margin-left: 11px;
+}
+
+.hod-user-info strong {
+  display: block;
+
+  overflow: hidden;
+
+  color: #ffffff;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  line-height: 1.3;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hod-user-info span {
+  display: block;
+
+  margin-top: 3px;
+
+  overflow: hidden;
+
+  color: #aaa1d4;
+
+  font-size: 9px;
+  font-weight: 500;
+
+  line-height: 1.3;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   SIGN OUT
+========================================================= */
+
+.hod-signout {
+  width: 100%;
+  height: 46px;
+
+  margin-top: 8px;
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+
+  background: rgba(255, 255, 255, 0.025);
+
+  color: #d2cae8;
+
+  font-family: inherit;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.hod-signout:hover {
+  background: rgba(255, 255, 255, 0.08);
+
+  border-color: rgba(255, 255, 255, 0.18);
+
+  color: #ffffff;
+}
+
+.hod-signout:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.hod-signout-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+
+/* =========================================================
+   MAIN CONTENT
+========================================================= */
+
+.hod-main {
+  position: relative;
+
+  width: calc(100% - 297px) !important;
+  min-width: 0;
+  min-height: 100vh;
+
+  margin-left: 297px !important;
+
+  background: #f5f7fc;
+
+  overflow-x: hidden;
+}
+
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+.hod-page {
+  width: 100%;
+  min-height: 100vh;
+
+  padding: 44px 37px 55px;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.hod-header {
+  width: 100%;
+  min-height: 98px;
+
+  margin-bottom: 27px;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 30px;
+}
+
+.hod-header-content {
+  min-width: 0;
+}
+
+.hod-header-label {
+  margin-bottom: 8px;
+
+  color: #5b35d5;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 1.8px;
+  line-height: 1.2;
+}
+
+.hod-header h1 {
+  margin: 0;
+
+  color: #111827;
+
+  font-size: 34px;
+  font-weight: 800;
+
+  line-height: 1.12;
+  letter-spacing: -1px;
+}
+
+.hod-header p {
+  margin: 9px 0 0;
+
+  color: #667085;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   DATE
+========================================================= */
+
+.hod-header-date {
+  min-width: 145px;
+
+  padding: 14px 20px;
+
+  border: 1px solid #e2e5eb;
+  border-radius: 11px;
+
+  background: #ffffff;
+
+  text-align: center;
+
+  box-shadow:
+    0 2px 8px
+    rgba(30, 24, 70, 0.025);
+}
+
+.hod-header-date span {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #98a2b3;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing: 1px;
+  line-height: 1.2;
+}
+
+.hod-header-date strong {
+  color: #344054;
+
+  font-size: 12px;
+  font-weight: 750;
+
+  line-height: 1.3;
+}
+
+
+/* =========================================================
+   STATISTICS
+========================================================= */
+
+.hod-stats {
+  width: 100%;
+
+  margin-bottom: 27px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 18px;
+}
+
+.hod-stat-card {
+  width: 100%;
+  min-height: 148px;
+
+  padding: 19px 20px;
+
+  border: 1px solid #e2e5eb;
+  border-radius: 11px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 2px 8px
+    rgba(30, 24, 70, 0.025);
+}
+
+.hod-stat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+}
+
+.hod-stat-title {
+  color: #667085;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  line-height: 1.4;
+}
+
+.hod-stat-icon {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 10px;
+
+  background: #eee9ff;
+  color: #5b35d5;
+
+  font-size: 16px;
+}
+
+.hod-stat-value {
+  display: block;
+
+  margin-top: 14px;
+
+  color: #111827;
+
+  font-size: 31px;
+  font-weight: 800;
+
+  line-height: 1;
+}
+
+.hod-stat-subtitle {
+  display: block;
+
+  margin-top: 8px;
+
+  color: #98a2b3;
+
+  font-size: 10px;
+  font-weight: 500;
+
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   DASHBOARD GRID
+========================================================= */
+
+.hod-dashboard-grid {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1.25fr)
+    minmax(0, 0.95fr);
+
+  gap: 20px;
+
+  align-items: stretch;
+}
+
+
+/* =========================================================
+   DASHBOARD CARD
+========================================================= */
+
+.hod-card {
+  width: 100%;
+  min-width: 0;
+
+  min-height: 390px;
+
+  overflow: hidden;
+
+  border: 1px solid #e2e5eb;
+  border-radius: 13px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 3px 10px
+    rgba(30, 24, 70, 0.035);
+}
+
+
+/* =========================================================
+   CARD HEADER
+========================================================= */
+
+.hod-card-header {
+  width: 100%;
+  min-height: 83px;
+
+  padding: 18px 21px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  border-bottom: 1px solid #edf0f4;
+
+  background: #ffffff;
+}
+
+.hod-card-header h2 {
+  margin: 0;
+
+  color: #111827;
+
+  font-size: 17px;
+  font-weight: 800;
+
+  line-height: 1.3;
+}
+
+.hod-card-header p {
+  margin: 6px 0 0;
+
+  color: #98a2b3;
+
+  font-size: 10px;
+  font-weight: 500;
+
+  line-height: 1.4;
+}
+
+.hod-card-header button {
+  flex-shrink: 0;
+
+  padding: 5px 0;
+
+  border: none;
+
+  background: transparent;
+  color: #5b35d5;
+
+  font-family: inherit;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.hod-card-header button:hover {
+  color: #4927b5;
+  transform: translateX(2px);
+}
+
+
+/* =========================================================
+   EMPTY DATA
+========================================================= */
+
+.hod-empty-content {
+  width: 100%;
+  min-height: 305px;
+
+  padding: 40px 25px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  background: #ffffff;
+}
+
+.hod-empty-icon {
+  width: 64px;
+  height: 64px;
+
+  margin-bottom: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f0ebff 0%,
+      #e9e2ff 100%
+    );
+
+  color: #5b35d5;
+
+  font-size: 22px;
+  font-weight: 800;
+
+  box-shadow:
+    0 7px 20px
+    rgba(91, 53, 213, 0.08);
+}
+
+.hod-empty-content h3 {
+  margin: 0;
+
+  color: #111827;
+
+  font-size: 16px;
+  font-weight: 800;
+
+  line-height: 1.4;
+}
+
+.hod-empty-content p {
+  width: 100%;
+  max-width: 360px;
+
+  margin: 8px auto 0;
+
+  color: #98a2b3;
+
+  font-size: 11px;
+  font-weight: 500;
+
+  line-height: 1.65;
+}
+
+
+/* =========================================================
+   ATTENDANCE LIST
+========================================================= */
+
+.hod-attendance-list {
+  width: 100%;
+
+  padding: 5px 20px;
+}
+
+.hod-attendance-row {
+  width: 100%;
+  min-height: 90px;
+
+  padding: 15px 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  border-bottom: 1px solid #edf0f4;
+}
+
+.hod-attendance-row:last-child {
+  border-bottom: none;
+}
+
+.hod-class-icon {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 11px;
+
+  background: #eee9ff;
+  color: #5b35d5;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.hod-class-info {
+  width: 180px;
+  min-width: 100px;
+}
+
+.hod-class-info strong {
+  display: block;
+
+  overflow: hidden;
+
+  color: #344054;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  line-height: 1.4;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hod-class-info span {
+  display: block;
+
+  margin-top: 4px;
+
+  color: #98a2b3;
+
+  font-size: 9px;
+  font-weight: 500;
+
+  line-height: 1.3;
+}
+
+.hod-attendance-progress {
+  flex: 1;
+  min-width: 120px;
+}
+
+.hod-attendance-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 6px;
+}
+
+.hod-attendance-top span {
+  color: #667085;
+
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.hod-attendance-top strong {
+  color: #344054;
+
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.hod-progress-track {
+  width: 100%;
+  height: 7px;
+
+  overflow: hidden;
+
+  border-radius: 20px;
+
+  background: #eeeafa;
+}
+
+.hod-progress-fill {
+  height: 100%;
+
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      90deg,
+      #5b35d5 0%,
+      #673be4 100%
+    );
+
+  transition: width 0.3s ease;
+}
+
+.hod-absent {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #98a2b3;
+
+  font-size: 9px;
+  font-weight: 500;
+}
+
+
+/* =========================================================
+   TIMETABLE
+========================================================= */
+
+.hod-timetable-list {
+  width: 100%;
+
+  padding: 5px 20px;
+}
+
+.hod-timetable-row {
+  width: 100%;
+  min-height: 76px;
+
+  padding: 13px 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 18px;
+
+  border-bottom: 1px solid #edf0f4;
+}
+
+.hod-timetable-row:last-child {
+  border-bottom: none;
+}
+
+.hod-time {
+  width: 78px;
+
+  flex-shrink: 0;
+
+  color: #5b35d5;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  line-height: 1.3;
+}
+
+.hod-timetable-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.hod-timetable-info strong {
+  display: block;
+
+  overflow: hidden;
+
+  color: #344054;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  line-height: 1.4;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hod-timetable-info span {
+  display: block;
+
+  margin-top: 4px;
+
+  overflow: hidden;
+
+  color: #98a2b3;
+
+  font-size: 9px;
+  font-weight: 500;
+
+  line-height: 1.3;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   DASHBOARD CONFIGURATION
+========================================================= */
+
+.hod-dashboard-configuration {
+  width: 100%;
+
+  margin-top: 28px;
+
+  padding: 28px;
+
+  border: 1px solid #e2e5eb;
+  border-radius: 13px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 3px 10px
+    rgba(30, 24, 70, 0.035);
+}
+
+.hod-dashboard-configuration-label {
+  margin-bottom: 6px;
+
+  color: #5b35d5;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 1.5px;
+}
+
+.hod-dashboard-configuration h2 {
+  margin: 0;
+
+  color: #111827;
+
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.hod-dashboard-configuration p {
+  margin: 7px 0 0;
+
+  color: #667085;
+
+  font-size: 12px;
+}
+
+
+/* =========================================================
+   ADD BUTTON
+========================================================= */
+
+.hod-add-button {
+  min-height: 40px;
+
+  margin-top: 18px;
+
+  padding: 0 18px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #5b35d5;
+
+  color: #ffffff;
+
+  font-family: inherit;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.hod-add-button:hover {
+  background: #4927b5;
+}
+
+.hod-add-button:active {
+  transform: scale(0.98);
+}
+
+
+/* =========================================================
+   IMPORTANT:
+   KEEP SIDEBAR VISIBLE ON ALL HOD PAGES
+========================================================= */
+
+.hod-dashboard-layout > .hod-sidebar {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+
+  display: flex !important;
+
+  visibility: visible !important;
+  opacity: 1 !important;
+
+  z-index: 99999 !important;
+}
+
+.hod-dashboard-layout > .hod-main {
+  position: relative !important;
+
+  margin-left: 297px !important;
+
+  width: calc(100% - 297px) !important;
+
+  min-height: 100vh;
+}
+
+
+/* =========================================================
+   LARGE DESKTOP
+========================================================= */
+
+@media (min-width: 1500px) {
+
+  .hod-sidebar {
+    width: 297px !important;
+  }
+
+  .hod-main {
+    width: calc(100% - 297px) !important;
+    margin-left: 297px !important;
+  }
+
+  .hod-page {
+    padding: 45px 42px 60px;
+  }
+
+  .hod-header h1 {
+    font-size: 36px;
+  }
+
+  .hod-stat-card {
+    min-height: 155px;
+  }
+
+  .hod-card {
+    min-height: 400px;
+  }
+}
+
+
+/* =========================================================
+   LAPTOP
+========================================================= */
+
+@media (max-width: 1200px) {
+
+  .hod-page {
+    padding: 35px 28px 50px;
+  }
+
+  .hod-stats {
+    gap: 15px;
+  }
+
+  .hod-dashboard-grid {
+    gap: 17px;
+  }
+
+  .hod-header h1 {
+    font-size: 31px;
+  }
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1000px) {
+
+  .hod-sidebar {
+    width: 230px !important;
+  }
+
+  .hod-main {
+    width: calc(100% - 230px) !important;
+    margin-left: 230px !important;
+  }
+
+  .hod-page {
+    padding: 30px 22px 45px;
+  }
+
+  .hod-stats {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .hod-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hod-card {
+    min-height: 370px;
+  }
+}
+
+
+/* =========================================================
+   SMALL TABLET
+========================================================= */
+
+@media (max-width: 800px) {
+
+  .hod-header {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 18px;
+  }
+
+  .hod-header-date {
+    min-width: 140px;
+  }
+
+  .hod-stat-card {
+    min-height: 140px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+  .hod-sidebar {
+    width: 72px !important;
+  }
+
+  .hod-main {
+    width: calc(100% - 72px) !important;
+    margin-left: 72px !important;
+  }
+
+  .hod-page {
+    padding: 24px 16px 35px;
+  }
+
+  .hod-brand {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .hod-brand-text {
+    display: none;
+  }
+
+  .hod-role {
+    display: none;
+  }
+
+  .hod-navigation {
+    padding: 10px 8px;
+  }
+
+  .hod-nav-item {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .hod-nav-label {
+    display: none;
+  }
+
+  .hod-nav-icon {
+    width: 30px;
+  }
+
+  .hod-sidebar-bottom {
+    padding: 10px 8px;
+  }
+
+  .hod-user {
+    justify-content: center;
+    padding: 7px 0;
+  }
+
+  .hod-user-info {
+    display: none;
+  }
+
+  .hod-signout {
+    padding: 0;
+  }
+
+  .hod-signout span:last-child {
+    display: none;
+  }
+
+  .hod-header h1 {
+    font-size: 28px;
+  }
+
+  .hod-header p {
+    font-size: 12px;
+  }
+
+  .hod-header-date {
+    width: 100%;
+    text-align: left;
+  }
+
+  .hod-stats {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 12px;
+  }
+
+  .hod-stat-card {
+    min-height: 135px;
+    padding: 16px;
+  }
+
+  .hod-stat-value {
+    font-size: 27px;
+  }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 480px) {
+
+  .hod-page {
+    padding: 20px 12px 30px;
+  }
+
+  .hod-header {
+    margin-bottom: 20px;
+  }
+
+  .hod-header-label {
+    font-size: 9px;
+  }
+
+  .hod-header h1 {
+    font-size: 24px;
+    letter-spacing: -0.5px;
+  }
+
+  .hod-header p {
+    font-size: 11px;
+  }
+
+  .hod-stats {
+    grid-template-columns: 1fr;
+
+    gap: 12px;
+
+    margin-bottom: 20px;
+  }
+
+  .hod-stat-card {
+    min-height: 125px;
+  }
+
+  .hod-dashboard-grid {
+    gap: 14px;
+  }
+
+  .hod-card {
+    min-height: 340px;
+    border-radius: 11px;
+  }
+
+  .hod-card-header {
+    min-height: 76px;
+    padding: 15px 16px;
+  }
+
+  .hod-card-header h2 {
+    font-size: 14px;
+  }
+
+  .hod-card-header p {
+    font-size: 9px;
+  }
+
+  .hod-card-header button {
+    font-size: 10px;
+  }
+
+  .hod-empty-content {
+    min-height: 255px;
+    padding: 30px 15px;
+  }
+
+  .hod-empty-icon {
+    width: 52px;
+    height: 52px;
+
+    margin-bottom: 14px;
+
+    font-size: 19px;
+  }
+
+  .hod-empty-content h3 {
+    font-size: 14px;
+  }
+
+  .hod-empty-content p {
+    max-width: 270px;
+    font-size: 10px;
+  }
+
+  .hod-attendance-list {
+    padding: 5px 15px;
+  }
+
+  .hod-attendance-row {
+    gap: 8px;
+  }
+
+  .hod-class-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .hod-class-info {
+    width: 90px;
+    min-width: 80px;
+  }
+
+  .hod-class-info strong {
+    font-size: 10px;
+  }
+
+  .hod-class-info span {
+    font-size: 8px;
+  }
+
+  .hod-attendance-progress {
+    min-width: 90px;
+  }
+
+  .hod-timetable-list {
+    padding: 5px 15px;
+  }
+
+  .hod-timetable-row {
+    gap: 10px;
+  }
+
+  .hod-time {
+    width: 60px;
+    font-size: 9px;
+  }
+
+  .hod-timetable-info strong {
+    font-size: 10px;
+  }
+
+  .hod-timetable-info span {
+    font-size: 8px;
+  }
+
+  .hod-dashboard-configuration {
+    padding: 20px;
+  }
+
+  .hod-dashboard-configuration h2 {
+    font-size: 19px;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+========================================================= */
+
+@media (max-width: 360px) {
+
+  .hod-sidebar {
+    width: 60px !important;
+  }
+
+  .hod-main {
+    width: calc(100% - 60px) !important;
+    margin-left: 60px !important;
+  }
+
+  .hod-page {
+    padding: 16px 10px 25px;
+  }
+
+  .hod-stat-card {
+    padding: 14px;
+  }
+
+  .hod-stat-title {
+    font-size: 11px;
+  }
+
+  .hod-stat-icon {
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
+  }
+
+  .hod-stat-value {
+    font-size: 25px;
+  }
+}

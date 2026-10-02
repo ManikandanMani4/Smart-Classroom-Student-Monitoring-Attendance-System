@@ -1,0 +1,371 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+/* =========================================================
+   SMART CLASSROOM
+   GLOBAL CSS
+========================================================= */
+
+:root {
+  font-family: "Plus Jakarta Sans", sans-serif;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+
+html {
+  width: 100%;
+  min-height: 100%;
+
+  font-family: "Plus Jakarta Sans", sans-serif;
+
+  font-size: 16px;
+
+  scroll-behavior: smooth;
+}
+
+
+body {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100vh;
+
+  font-family: "Plus Jakarta Sans", sans-serif;
+
+  background: #f5f7fc;
+
+  color: #111827;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+
+/* =========================================================
+   GLOBAL FONT
+========================================================= */
+
+body,
+button,
+input,
+textarea,
+select,
+option,
+table,
+thead,
+tbody,
+tr,
+th,
+td,
+a,
+label,
+span,
+div,
+p,
+strong,
+small {
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+
+/* =========================================================
+   HEADINGS
+========================================================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Plus Jakarta Sans", sans-serif;
+
+  color: #111827;
+
+  margin: 0;
+
+  letter-spacing: -0.5px;
+}
+
+
+h1 {
+  font-size: 34px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+
+h2 {
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+
+h3 {
+  font-size: 22px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+
+h4 {
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+
+h5 {
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+
+h6 {
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   PARAGRAPHS
+========================================================= */
+
+p {
+  margin: 0;
+
+  font-size: 14px;
+
+  line-height: 1.6;
+
+  color: #667085;
+}
+
+
+/* =========================================================
+   LINKS
+========================================================= */
+
+a {
+  color: inherit;
+
+  text-decoration: none;
+
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+button {
+  border: none;
+
+  font-family: "Plus Jakarta Sans", sans-serif;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   INPUTS
+========================================================= */
+
+input,
+textarea,
+select {
+  font-family: "Plus Jakarta Sans", sans-serif;
+
+  font-size: 14px;
+
+  font-weight: 500;
+}
+
+input::placeholder,
+textarea::placeholder {
+  font-family: "Plus Jakarta Sans", sans-serif;
+
+  color: #98a2b3;
+}
+
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+th,
+td {
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+
+/* =========================================================
+   IMAGES
+========================================================= */
+
+img {
+  max-width: 100%;
+
+  display: block;
+}
+
+
+/* =========================================================
+   LISTS
+========================================================= */
+
+ul,
+ol {
+  list-style: none;
+}
+
+
+/* =========================================================
+   SELECTION
+========================================================= */
+
+::selection {
+  background: #ddd4ff;
+
+  color: #21184f;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f7fc;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c8c1e5;
+
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5b35d5;
+}
+
+
+/* =========================================================
+   FOCUS
+========================================================= */
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #5b35d5;
+
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   RESPONSIVE TYPOGRAPHY
+========================================================= */
+
+@media (max-width: 1000px) {
+
+  h1 {
+    font-size: 31px;
+  }
+
+  h2 {
+    font-size: 26px;
+  }
+
+  h3 {
+    font-size: 21px;
+  }
+}
+
+
+@media (max-width: 700px) {
+
+  h1 {
+    font-size: 29px;
+  }
+
+  h2 {
+    font-size: 24px;
+  }
+
+  h3 {
+    font-size: 20px;
+  }
+
+  p {
+    font-size: 14px;
+  }
+}
+
+
+@media (max-width: 480px) {
+
+  h1 {
+    font-size: 27px;
+  }
+
+  h2 {
+    font-size: 23px;
+  }
+
+  h3 {
+    font-size: 19px;
+  }
+
+  p {
+    font-size: 13px;
+  }
+}

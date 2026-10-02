@@ -3,5 +3,15 @@
         "student_id": "VSBECIT245092",
         "student_name": "Manikandan",
         "embedding_file": "data/embeddings\\VSBECIT245092.json"
+    },
+    {
+        "student_id": "VSBECIT245111",
+        "student_name": "Nithish",
+        "embedding_file": "data/embeddings\\VSBECIT245111.json"
+    },
+    {
+        "student_id": "VSBECIT245093",
+        "student_name": "Manoj",
+        "embedding_file": "data/embeddings\\VSBECIT245093.json"
     }
 ]

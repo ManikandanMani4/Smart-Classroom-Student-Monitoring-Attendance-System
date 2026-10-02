@@ -1,0 +1,284 @@
+/* =========================================================
+   STAFF / MANAGEMENT TABLE - LARGE READABLE FONT
+========================================================= */
+
+/* Summary cards */
+
+.admin-content .stat-card,
+.admin-content .admin-stat-card {
+  font-family: var(--font-family);
+}
+
+.admin-content .stat-card span,
+.admin-content .admin-stat-card .stat-title {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #667085 !important;
+}
+
+.admin-content .stat-card strong,
+.admin-content .admin-stat-card .stat-value {
+  font-size: 27px !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+}
+
+
+/* =========================================================
+   SEARCH BOX
+========================================================= */
+
+.admin-content input,
+.admin-content input::placeholder {
+  font-family: var(--font-family);
+
+  font-size: 14px !important;
+
+  font-weight: 500;
+}
+
+.admin-content input {
+  color: #111827;
+}
+
+
+/* =========================================================
+   MANAGEMENT TABLE
+========================================================= */
+
+.admin-content table {
+  width: 100%;
+
+  font-family: var(--font-family);
+}
+
+
+/* Table header */
+
+.admin-content table th {
+  padding: 15px 16px;
+
+  font-family: var(--font-family);
+
+  font-size: 11px !important;
+
+  line-height: 1.4;
+
+  font-weight: 800 !important;
+
+  letter-spacing: 0.6px;
+
+  text-transform: uppercase;
+
+  color: #667085;
+}
+
+
+/* Table body */
+
+.admin-content table td {
+  padding: 18px 16px;
+
+  font-family: var(--font-family);
+
+  font-size: 14px !important;
+
+  line-height: 1.5;
+
+  font-weight: 500 !important;
+
+  color: #344054;
+}
+
+
+/* Staff ID / important first column */
+
+.admin-content table td:first-child {
+  font-size: 14px !important;
+
+  font-weight: 700 !important;
+
+  color: #111827;
+}
+
+
+/* Names */
+
+.admin-content table td:nth-child(2) {
+  font-size: 14px !important;
+
+  font-weight: 600 !important;
+
+  color: #111827;
+}
+
+
+/* Email */
+
+.admin-content table td:nth-child(3) {
+  font-size: 13px !important;
+
+  font-weight: 500 !important;
+
+  color: #667085;
+}
+
+
+/* Phone */
+
+.admin-content table td:nth-child(4) {
+  font-size: 13px !important;
+
+  font-weight: 500 !important;
+}
+
+
+/* Designation */
+
+.admin-content table td:nth-child(5) {
+  font-size: 13px !important;
+
+  font-weight: 500 !important;
+}
+
+
+/* Department */
+
+.admin-content table td:nth-child(6) {
+  font-size: 13px !important;
+
+  font-weight: 500 !important;
+}
+
+
+/* Role */
+
+.admin-content table td:nth-child(7) {
+  font-size: 13px !important;
+
+  font-weight: 600 !important;
+
+  color: #344054;
+}
+
+
+/* =========================================================
+   STATUS BADGE
+========================================================= */
+
+.admin-content .status,
+.admin-content .status-badge,
+.admin-content .room-status {
+  font-family: var(--font-family);
+
+  font-size: 11px !important;
+
+  line-height: 1.4;
+
+  font-weight: 700 !important;
+}
+
+
+/* =========================================================
+   ACTIONS
+========================================================= */
+
+.admin-content table td:last-child {
+  white-space: nowrap;
+}
+
+.admin-content table td:last-child button {
+  font-family: var(--font-family);
+
+  font-size: 12px !important;
+
+  font-weight: 700 !important;
+}
+
+
+/* =========================================================
+   TABLE FOOTER
+========================================================= */
+
+.admin-content .table-footer,
+.admin-content .pagination,
+.admin-content .records-footer {
+  font-family: var(--font-family);
+
+  font-size: 12px !important;
+
+  font-weight: 500;
+
+  color: #667085;
+}
+
+
+/* =========================================================
+   CLEAR / EXPORT BUTTONS
+========================================================= */
+
+.admin-content button {
+  font-family: var(--font-family);
+}
+
+.admin-content .clear-button,
+.admin-content .export-button {
+  font-size: 12px !important;
+
+  font-weight: 600 !important;
+}
+
+
+/* =========================================================
+   ADD BUTTON
+========================================================= */
+
+.admin-content .add-button,
+.admin-content .primary-button {
+  font-family: var(--font-family);
+
+  font-size: 13px !important;
+
+  font-weight: 700 !important;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 900px) {
+
+  .admin-content table th {
+    font-size: 10px !important;
+  }
+
+  .admin-content table td {
+    font-size: 13px !important;
+  }
+
+  .admin-content table td:first-child {
+    font-size: 13px !important;
+  }
+}
+
+
+@media (max-width: 600px) {
+
+  .admin-content table th {
+    font-size: 9px !important;
+  }
+
+  .admin-content table td {
+    font-size: 12px !important;
+  }
+
+  .admin-content table td:first-child {
+    font-size: 12px !important;
+  }
+
+  .admin-content input,
+  .admin-content input::placeholder {
+    font-size: 13px !important;
+  }
+}

@@ -1,0 +1,858 @@
+/* =========================================================
+   SMART CLASSROOM - DASHBOARD LAYOUT
+========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+.app-layout {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  background: #f5f7fc;
+  color: #111827;
+  font-family: "Plus Jakarta Sans", Inter, Arial, sans-serif;
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.app-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+
+  background: #ffffff;
+  border-right: 1px solid #e7e9ef;
+
+  z-index: 1000;
+
+  overflow: hidden;
+}
+
+
+/* =========================================================
+   BRAND
+========================================================= */
+
+.app-brand {
+  height: 82px;
+  padding: 0 22px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  border-bottom: 1px solid #eef0f4;
+  flex-shrink: 0;
+}
+
+.app-brand-icon {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 11px;
+
+  background: #5b35d5;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  box-shadow: 0 5px 12px rgba(91, 53, 213, 0.18);
+}
+
+.app-brand-text {
+  min-width: 0;
+}
+
+.app-brand-text h2 {
+  margin: 0;
+
+  color: #21184f;
+
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+.app-brand-text span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #98a0ae;
+
+  font-size: 8px;
+  line-height: 10px;
+  font-weight: 800;
+
+  letter-spacing: 1.4px;
+}
+
+
+/* =========================================================
+   SIDEBAR CONTENT
+========================================================= */
+
+.app-sidebar-content {
+  flex: 1;
+
+  padding: 24px 14px 15px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.app-sidebar-label {
+  padding: 0 12px;
+
+  color: #9aa1ad;
+
+  font-size: 9px;
+  line-height: 12px;
+  font-weight: 800;
+
+  letter-spacing: 1.5px;
+}
+
+.app-role {
+  margin: 7px 12px 20px;
+
+  color: #5b35d5;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  letter-spacing: 0.5px;
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+.app-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.app-nav-item {
+  width: 100%;
+  height: 45px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 13px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: transparent;
+  color: #667085;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  text-align: left;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.app-nav-item:hover {
+  background: #f3efff;
+  color: #5b35d5;
+}
+
+.app-nav-item:active {
+  transform: scale(0.985);
+}
+
+.app-nav-item.active {
+  background: #eee9ff;
+  color: #5b35d5;
+
+  font-weight: 700;
+}
+
+.app-nav-icon {
+  width: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-right: 6px;
+
+  font-size: 17px;
+  line-height: 1;
+
+  color: inherit;
+}
+
+.app-nav-item.active .app-nav-icon {
+  color: #5b35d5;
+}
+
+
+/* =========================================================
+   SIDEBAR BOTTOM
+========================================================= */
+
+.app-sidebar-bottom {
+  padding: 15px;
+
+  border-top: 1px solid #eef0f4;
+
+  flex-shrink: 0;
+
+  background: #ffffff;
+}
+
+
+/* =========================================================
+   USER
+========================================================= */
+
+.app-user {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 12px;
+}
+
+.app-user-avatar {
+  width: 36px;
+  height: 36px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #eee9ff;
+  color: #5b35d5;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.app-user-info {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.app-user-info strong {
+  max-width: 155px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: #111827;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.app-user-info span {
+  margin-top: 3px;
+
+  color: #98a0ae;
+
+  font-size: 10px;
+  font-weight: 500;
+}
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+.app-logout {
+  width: 100%;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #667085;
+
+  font-family: inherit;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.app-logout:hover {
+  border-color: #f0caca;
+  background: #fff5f5;
+  color: #dc4c4c;
+}
+
+
+/* =========================================================
+   MAIN AREA
+========================================================= */
+
+.app-main {
+  min-width: 0;
+
+  width: calc(100% - 250px);
+
+  margin-left: 250px;
+
+  min-height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* =========================================================
+   TOPBAR
+========================================================= */
+
+.app-topbar {
+  position: sticky;
+  top: 0;
+
+  min-height: 82px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 15px 30px;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid #e7e9ef;
+
+  z-index: 900;
+}
+
+
+/* =========================================================
+   TOPBAR TITLE
+========================================================= */
+
+.app-topbar-title {
+  min-width: 0;
+}
+
+.app-topbar-title p {
+  margin: 0 0 4px;
+
+  color: #9aa1ad;
+
+  font-size: 9px;
+  line-height: 12px;
+  font-weight: 800;
+
+  letter-spacing: 1.5px;
+}
+
+.app-topbar-title h1 {
+  margin: 0;
+
+  color: #111827;
+
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   TOPBAR RIGHT
+========================================================= */
+
+.app-topbar-right {
+  display: flex;
+  align-items: center;
+
+  gap: 15px;
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.app-search {
+  width: 260px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 10px;
+
+  border: 1px solid #e3e6ec;
+  border-radius: 9px;
+
+  background: #f9fafc;
+}
+
+.search-icon {
+  margin-right: 8px;
+
+  color: #98a0ae;
+
+  font-size: 19px;
+}
+
+.app-search input {
+  min-width: 0;
+  flex: 1;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
+  color: #111827;
+
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.app-search input::placeholder {
+  color: #a3aab6;
+}
+
+.app-search kbd {
+  padding: 3px 6px;
+
+  border: 1px solid #e1e4e9;
+  border-radius: 5px;
+
+  background: #ffffff;
+
+  color: #98a0ae;
+
+  font-family: inherit;
+  font-size: 8px;
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   NOTIFICATION
+========================================================= */
+
+.app-notification {
+  position: relative;
+
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #e3e6ec;
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  color: #667085;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.app-notification:hover {
+  background: #f8f6ff;
+  color: #5b35d5;
+}
+
+.notification-icon {
+  font-size: 18px;
+}
+
+.notification-count {
+  position: absolute;
+
+  top: -5px;
+  right: -5px;
+
+  min-width: 17px;
+  height: 17px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 4px;
+
+  border-radius: 20px;
+
+  background: #dc4c4c;
+  color: #ffffff;
+
+  font-size: 8px;
+  font-weight: 800;
+
+  border: 2px solid #ffffff;
+}
+
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+.app-profile {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  padding-left: 3px;
+}
+
+.app-profile-avatar {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #5b35d5;
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.app-profile-info {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+}
+
+.app-profile-info strong {
+  max-width: 150px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: #111827;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.app-profile-info small {
+  margin-top: 2px;
+
+  color: #98a0ae;
+
+  font-size: 9px;
+  font-weight: 500;
+}
+
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+.app-page {
+  flex: 1;
+
+  width: 100%;
+
+  padding: 30px;
+
+  background: #f5f7fc;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+.app-sidebar-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.app-sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-sidebar-content::-webkit-scrollbar-thumb {
+  background: #e2e4ea;
+  border-radius: 10px;
+}
+
+.app-sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: #cfd2da;
+}
+
+
+/* =========================================================
+   RESPONSIVE - TABLET
+========================================================= */
+
+@media (max-width: 1100px) {
+  .app-sidebar {
+    width: 225px;
+  }
+
+  .app-main {
+    width: calc(100% - 225px);
+    margin-left: 225px;
+  }
+
+  .app-topbar {
+    padding: 15px 22px;
+  }
+
+  .app-page {
+    padding: 25px 22px;
+  }
+
+  .app-search {
+    width: 200px;
+  }
+
+  .app-profile-info {
+    display: none;
+  }
+}
+
+
+/* =========================================================
+   RESPONSIVE - MOBILE
+========================================================= */
+
+@media (max-width: 768px) {
+  .app-layout {
+    display: block;
+  }
+
+  .app-sidebar {
+    position: fixed;
+
+    width: 72px;
+    height: 100vh;
+  }
+
+  .app-brand {
+    height: 72px;
+
+    padding: 0;
+
+    justify-content: center;
+  }
+
+  .app-brand-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .app-brand-text {
+    display: none;
+  }
+
+  .app-sidebar-content {
+    padding: 18px 9px;
+  }
+
+  .app-sidebar-label,
+  .app-role {
+    display: none;
+  }
+
+  .app-navigation {
+    gap: 6px;
+  }
+
+  .app-nav-item {
+    width: 54px;
+    height: 46px;
+
+    justify-content: center;
+
+    padding: 0;
+  }
+
+  .app-nav-icon {
+    width: auto;
+    margin: 0;
+
+    font-size: 18px;
+  }
+
+  .app-nav-item > span:last-child {
+    display: none;
+  }
+
+  .app-sidebar-bottom {
+    padding: 10px 9px;
+  }
+
+  .app-user {
+    justify-content: center;
+  }
+
+  .app-user-info {
+    display: none;
+  }
+
+  .app-user-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .app-logout {
+    width: 54px;
+    margin: 0 auto;
+
+    padding: 0;
+  }
+
+  .app-logout span:last-child {
+    display: none;
+  }
+
+  .app-main {
+    width: calc(100% - 72px);
+
+    margin-left: 72px;
+  }
+
+  .app-topbar {
+    min-height: 72px;
+
+    padding: 12px 15px;
+  }
+
+  .app-topbar-title h1 {
+    font-size: 20px;
+    line-height: 25px;
+  }
+
+  .app-topbar-title p {
+    font-size: 8px;
+  }
+
+  .app-search {
+    display: none;
+  }
+
+  .app-topbar-right {
+    gap: 8px;
+  }
+
+  .app-profile-info {
+    display: none;
+  }
+
+  .app-page {
+    padding: 20px 15px;
+  }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 480px) {
+  .app-sidebar {
+    width: 60px;
+  }
+
+  .app-main {
+    width: calc(100% - 60px);
+    margin-left: 60px;
+  }
+
+  .app-nav-item {
+    width: 44px;
+  }
+
+  .app-sidebar-content {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .app-sidebar-bottom {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .app-logout {
+    width: 44px;
+  }
+
+  .app-page {
+    padding: 16px 12px;
+  }
+
+  .app-topbar {
+    padding: 10px 12px;
+  }
+
+  .app-topbar-title h1 {
+    font-size: 18px;
+  }
+
+  .app-notification {
+    width: 36px;
+    height: 36px;
+  }
+
+  .app-profile-avatar {
+    width: 34px;
+    height: 34px;
+  }
+}

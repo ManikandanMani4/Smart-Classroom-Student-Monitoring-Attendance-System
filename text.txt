@@ -1,0 +1,6 @@
+cd D:\project_s\SmartClassroom\ai-service
+venv\Scripts\activate
+python -m app.detection.test_detection
+python -m app.recognition.test_recognition // run the code 
+python -m app.detection.test_eye_capture  //
+python -m app.registration.student_registration
