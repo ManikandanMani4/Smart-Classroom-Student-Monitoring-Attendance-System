@@ -19,3 +19,7 @@ data/test_images/
 
 # Environment files
 .env
+
+
+# Camera frames
+backend/uploads/

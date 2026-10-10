@@ -593,3 +593,26 @@
   }
 
 }
+
+
+/* Face-detection overlay */
+.camera-preview-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.camera-preview-container .camera-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.camera-face-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
