@@ -1,0 +1,279 @@
+
+.advisor-students-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+  min-width: 0;
+  color: #171923;
+}
+
+.students-toolbar,
+.students-list-heading,
+.students-history-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+
+.students-toolbar h2,
+.students-card h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.students-toolbar p,
+.students-card p {
+  color: #697180;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.students-card {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 15px;
+  box-shadow: 0 4px 18px rgba(30, 24, 70, 0.04);
+}
+
+.students-button {
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.students-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.students-button-primary {
+  background: #5b35d5;
+  color: #fff;
+}
+
+.students-button-primary:hover {
+  background: #4927b5;
+}
+
+.students-button-secondary {
+  background: #fff;
+  color: #454b59;
+  border-color: #dfe3eb;
+}
+
+.students-button-small {
+  background: #f1edff;
+  color: #5130c3;
+}
+
+.students-button-danger {
+  background: #fff0f0;
+  color: #b42323;
+  border-color: #ffdddd;
+}
+
+.students-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.students-form-grid label,
+.students-date-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #343a49;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.students-form-grid input,
+.students-form-grid select,
+.students-search,
+.students-date-label input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #dce2ed;
+  border-radius: 8px;
+  background: #fff;
+  color: #171923;
+  font: inherit;
+  font-size: 13px;
+}
+
+.students-form-grid input:focus,
+.students-form-grid select:focus,
+.students-search:focus,
+.students-date-label input:focus {
+  outline: none;
+  border-color: #8a73e8;
+  box-shadow: 0 0 0 3px rgba(91, 53, 213, 0.1);
+}
+
+.students-form-actions,
+.students-row-actions,
+.face-camera-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.students-search {
+  max-width: 320px;
+}
+
+.students-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 20px;
+  border: 1px solid #edf0f5;
+  border-radius: 10px;
+}
+
+.students-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.students-table thead {
+  background: #f7f9fc;
+}
+
+.students-table th {
+  padding: 14px;
+  color: #727b8d;
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.students-table td {
+  padding: 14px;
+  border-top: 1px solid #edf0f5;
+  color: #525b6b;
+  vertical-align: middle;
+}
+
+.students-table tbody tr:hover {
+  background: #fafaff;
+}
+
+.students-id {
+  color: #343a49 !important;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.students-status {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.status-present {
+  background: #dcfce8;
+  color: #137a43;
+}
+
+.status-other {
+  background: #fff1d6;
+  color: #8b5a12;
+}
+
+.students-empty {
+  padding: 35px 16px;
+  margin-top: 18px;
+  background: #f7f9fc;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.students-empty h3 {
+  margin: 0;
+  color: #171923;
+}
+
+.students-note {
+  font-size: 12px;
+}
+
+.face-registration {
+  margin-top: 24px;
+  padding: 20px;
+  background: #f8f9fc;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.face-registration h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.face-camera,
+.face-captured {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.face-camera video,
+.face-captured img {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  max-height: 380px;
+  object-fit: contain;
+  background: #111827;
+  border-radius: 12px;
+}
+
+.face-message,
+.students-error {
+  color: #5130c3;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.students-error {
+  color: #b42323;
+}
+
+@media (max-width: 760px) {
+  .students-toolbar,
+  .students-list-heading,
+  .students-history-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .students-search {
+    max-width: none;
+  }
+
+  .students-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .students-card {
+    padding: 16px;
+  }
+}

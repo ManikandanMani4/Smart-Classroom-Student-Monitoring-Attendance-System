@@ -1,1479 +1,597 @@
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
-import {
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
-
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
-
 import "./AdvisorDashboard.css";
 
+const ATTENDANCE_API = "http://localhost:5000/api/attendance";
 
-/* =========================================================
-   ADVISOR LAYOUT
-   Sidebar + Header + Main Content
-   Everything is kept inside this same file.
-========================================================= */
+const STUDENTS_KEY = "smartclassroom_students";
+const ATTENDANCE_KEY = "smartclassroom_attendance";
+const TIMETABLE_KEY = "smartclassroom_Timetable";
+const ALERTS_KEY = "smartclassroom_Alerts";
 
-function AdvisorLayout({
-  children,
-  title,
-  description,
-}) {
+function readData(key) {
+  try {
+    const data = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function getTodayDate() {
+  const date = new Date();
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function normalize(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function getStudentId(student) {
+  return String(
+    student?.studentId ||
+      student?.student_id ||
+      student?.id ||
+      student?.rollNumber ||
+      student?.registerNumber ||
+      student?.studentIdNumber ||
+      ""
+  ).trim();
+}
+
+function getAttendanceStudentId(record) {
+  return String(
+    record?.studentId ||
+      record?.student_id ||
+      record?.studentIdNumber ||
+      record?.rollNumber ||
+      record?.registerNumber ||
+      record?.id ||
+      ""
+  ).trim();
+}
+
+function isPresent(record) {
+  return (
+    normalize(record?.status) === "present" ||
+    record?.present === true ||
+    record?.attendance === true
+  );
+}
+
+function AdvisorLayout({ children, title, description }) {
   const { user, logout } = useAuth();
-
   const navigate = useNavigate();
-
   const location = useLocation();
 
-
-  /* =======================================================
-     SIDEBAR MENU
-  ======================================================= */
-
   const menuItems = [
-    {
-      label: "Dashboard",
-      path: "/advisor/dashboard",
-      icon: "▦",
-    },
-
-    {
-      label: "Students",
-      path: "/advisor/students",
-      icon: "♙",
-    },
-
-    {
-      label: "Attendance",
-      path: "/advisor/attendance",
-      icon: "✓",
-    },
-
-    {
-      label: "Timetable",
-      path: "/advisor/timetable",
-      icon: "▣",
-    },
-
-    {
-      label: "Classroom",
-      path: "/advisor/classroom",
-      icon: "◉",
-    },
-
-    {
-      label: "Alerts",
-      path: "/advisor/alerts",
-      icon: "⚠",
-    },
-
-    {
-      label: "Reports",
-      path: "/advisor/reports",
-      icon: "▥",
-    },
+    { label: "Dashboard", path: "/advisor/dashboard", icon: "▦" },
+    { label: "Students", path: "/advisor/students", icon: "♙" },
+    { label: "Attendance", path: "/advisor/attendance", icon: "✓" },
+    { label: "Timetable", path: "/advisor/timetable", icon: "▣" },
+    { label: "Classroom", path: "/advisor/classroom", icon: "◉" },
+    { label: "Alerts", path: "/advisor/alerts", icon: "⚠" },
+    { label: "Reports", path: "/advisor/reports", icon: "▥" },
   ];
 
-
-  /* =======================================================
-     ACTIVE MENU
-  ======================================================= */
-
-  const isActive = (path) => {
-
-    if (path === "/advisor/dashboard") {
-      return location.pathname === path;
-    }
-
-    return (
-      location.pathname === path ||
-      location.pathname.startsWith(path + "/")
-    );
-  };
-
-
-  /* =======================================================
-     LOGOUT
-  ======================================================= */
-
   const handleLogout = () => {
-
     logout();
-
     navigate("/login");
   };
 
-
   return (
     <div className="advisor-dashboard-layout">
-
-
-      {/* ===================================================
-          SIDEBAR
-      =================================================== */}
-
       <aside className="advisor-sidebar">
-
-
-        {/* =================================================
-            BRAND
-        ================================================= */}
-
         <div className="advisor-brand">
-
-          <div className="advisor-brand-icon">
-            SC
-          </div>
-
+          <div className="advisor-brand-icon">SC</div>
           <div className="advisor-brand-text">
-
-            <h2>
-              SmartClassroom
-            </h2>
-
-            <span>
-              ATTENDANCE SYSTEM
-            </span>
-
+            <h2>SmartClassroom</h2>
+            <span>ATTENDANCE SYSTEM</span>
           </div>
-
         </div>
-
-
-        {/* =================================================
-            ROLE
-        ================================================= */}
 
         <div className="advisor-role">
-
-          <div className="advisor-role-label">
-            LOGGED IN AS
-          </div>
-
-          <div className="advisor-role-name">
-            Class Advisor
-          </div>
-
+          <div className="advisor-role-label">LOGGED IN AS</div>
+          <div className="advisor-role-name">Class Advisor</div>
         </div>
 
-
-        {/* =================================================
-            NAVIGATION
-        ================================================= */}
-
         <nav className="advisor-navigation">
-
           {menuItems.map((item) => {
-
-            const active = isActive(
-              item.path
-            );
+            const active =
+              location.pathname === item.path ||
+              location.pathname.startsWith(item.path + "/");
 
             return (
               <button
                 key={item.path}
                 type="button"
-                className={`advisor-nav-item ${
-                  active ? "active" : ""
-                }`}
-                onClick={() =>
-                  navigate(item.path)
-                }
+                className={`advisor-nav-item ${active ? "active" : ""}`}
+                onClick={() => navigate(item.path)}
               >
-
-                <span className="advisor-nav-icon">
-                  {item.icon}
-                </span>
-
-                <span className="advisor-nav-label">
-                  {item.label}
-                </span>
-
+                <span className="advisor-nav-icon">{item.icon}</span>
+                <span className="advisor-nav-label">{item.label}</span>
               </button>
             );
           })}
-
         </nav>
 
-
-        {/* =================================================
-            SIDEBAR BOTTOM
-        ================================================= */}
-
         <div className="advisor-sidebar-bottom">
-
-
-          {/* USER */}
-
           <div className="advisor-user">
-
             <div className="advisor-avatar">
-
-              {user?.name
-                ?.charAt(0)
-                ?.toUpperCase() || "A"}
-
+              {user?.name?.charAt(0)?.toUpperCase() || "A"}
             </div>
-
-
             <div className="advisor-user-info">
-
-              <strong>
-                {user?.name || "Class Advisor"}
-              </strong>
-
-              <span>
-                {user?.className || "III IT - A"}
-              </span>
-
+              <strong>{user?.name || "Class Advisor"}</strong>
+              <span>{user?.className || "III IT - A"}</span>
             </div>
-
           </div>
-
-
-          {/* SIGN OUT */}
 
           <button
             type="button"
             className="advisor-signout"
             onClick={handleLogout}
           >
-
-            <span className="advisor-signout-icon">
-              ↪
-            </span>
-
-            <span>
-              Sign Out
-            </span>
-
+            <span className="advisor-signout-icon">↪</span>
+            <span>Sign Out</span>
           </button>
-
         </div>
-
       </aside>
 
-
-      {/* ===================================================
-          MAIN AREA
-      =================================================== */}
-
       <main className="advisor-main">
-
         <div className="advisor-page">
-
-
-          {/* =================================================
-              HEADER
-          ================================================= */}
-
           <div className="advisor-header">
-
             <div className="advisor-header-left">
-
-              <div className="advisor-header-label">
-                CLASS ADVISOR
-              </div>
-
-              <h1>
-                {title}
-              </h1>
-
+              <div className="advisor-header-label">CLASS ADVISOR</div>
+              <h1>{title}</h1>
               <p>
                 {description ||
                   `Manage and monitor the ${title.toLowerCase()} module of your assigned class.`}
               </p>
-
             </div>
-
           </div>
 
-
-          {/* =================================================
-              PAGE CONTENT
-          ================================================= */}
-
-          <div className="advisor-module-content">
-
-            {children}
-
-          </div>
-
+          <div className="advisor-module-content">{children}</div>
         </div>
-
       </main>
-
     </div>
   );
 }
 
-
-/* =========================================================
-   ADVISOR DASHBOARD
-========================================================= */
-
 function AdvisorDashboard() {
-
   const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState(() => readData(STUDENTS_KEY));
+  const [attendance, setAttendance] = useState(() =>
+    readData(ATTENDANCE_KEY)
+  );
+  const [timetable, setTimetable] = useState(() =>
+    readData(TIMETABLE_KEY)
+  );
+  const [alerts, setAlerts] = useState(() => readData(ALERTS_KEY));
+  const [todayDate, setTodayDate] = useState(getTodayDate);
 
-  const [attendance, setAttendance] = useState([]);
+  
+  const loadDashboardData = async () => {
+    const currentDate = getTodayDate();
 
-  const [timetable, setTimetable] = useState([]);
-
-  const [alerts, setAlerts] = useState([]);
-
-
-  /* =======================================================
-     LOAD DATA
-  ======================================================= */
-
-  const loadDashboardData = () => {
+    setStudents(readData(STUDENTS_KEY));
+    setTimetable(readData(TIMETABLE_KEY));
+    setAlerts(readData(ALERTS_KEY));
+    setTodayDate(currentDate);
 
     try {
-
-      const studentsData =
-        JSON.parse(
-          localStorage.getItem(
-            "smartclassroom_Students"
-          )
-        ) || [];
-
-      const attendanceData =
-        JSON.parse(
-          localStorage.getItem(
-            "smartclassroom_Attendance"
-          )
-        ) || [];
-
-      const timetableData =
-        JSON.parse(
-          localStorage.getItem(
-            "smartclassroom_Timetable"
-          )
-        ) || [];
-
-      const alertsData =
-        JSON.parse(
-          localStorage.getItem(
-            "smartclassroom_Alerts"
-          )
-        ) || [];
-
-
-      setStudents(
-        Array.isArray(studentsData)
-          ? studentsData
-          : []
+      const response = await fetch(
+        `${ATTENDANCE_API}?date=${currentDate}`,
+        { headers: { Accept: "application/json" } }
       );
 
+      if (!response.ok) {
+        throw new Error(`Attendance API returned ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const apiRecords = Array.isArray(data.records)
+        ? data.records
+        : [];
+
+      // Add the selected date because the dashboard filters by date.
       setAttendance(
-        Array.isArray(attendanceData)
-          ? attendanceData
-          : []
+        apiRecords.map((record) => ({
+          ...record,
+          date: record.date || data.date || currentDate,
+        }))
       );
-
-      setTimetable(
-        Array.isArray(timetableData)
-          ? timetableData
-          : []
-      );
-
-      setAlerts(
-        Array.isArray(alertsData)
-          ? alertsData
-          : []
-      );
-
     } catch (error) {
-
-      console.error(
-        "Failed to load advisor dashboard data:",
-        error
-      );
-
-      setStudents([]);
-      setAttendance([]);
-      setTimetable([]);
-      setAlerts([]);
+      console.error("Could not load dashboard attendance:", error);
+      // Do not replace existing API attendance with stale local data.
     }
   };
 
-
-  /* =======================================================
-     INITIAL LOAD
-  ======================================================= */
-
   useEffect(() => {
-
     loadDashboardData();
 
-  }, []);
+    const interval = setInterval(() => {
+      loadDashboardData();
+    }, 3000);
 
-
-  /* =======================================================
-     UPDATE WHEN DATA CHANGES
-  ======================================================= */
-
-  useEffect(() => {
-
-    const handleStorage = () => {
+    const handleUpdate = () => {
       loadDashboardData();
     };
 
-
-    const handleCustomUpdate = () => {
-      loadDashboardData();
-    };
-
-
-    window.addEventListener(
-      "storage",
-      handleStorage
-    );
-
-
-    window.addEventListener(
-      "smartclassroom:dataUpdated",
-      handleCustomUpdate
-    );
-
+    window.addEventListener("storage", handleUpdate);
+    window.addEventListener("smartclassroom:dataUpdated", handleUpdate);
+    window.addEventListener("focus", handleUpdate);
 
     return () => {
-
-      window.removeEventListener(
-        "storage",
-        handleStorage
-      );
-
+      clearInterval(interval);
+      window.removeEventListener("storage", handleUpdate);
       window.removeEventListener(
         "smartclassroom:dataUpdated",
-        handleCustomUpdate
+        handleUpdate
       );
-
+      window.removeEventListener("focus", handleUpdate);
     };
-
   }, []);
 
+  const assignedClass = user?.className || "III IT - A";
 
-  /* =======================================================
-     ASSIGNED CLASS
-  ======================================================= */
-
-  const assignedClass =
-    user?.className ||
-    "III IT - A";
-
-
-  /* =======================================================
-     FILTER STUDENTS
-  ======================================================= */
+  const todayName = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+  });
 
   const classStudents = useMemo(() => {
-
-    if (!Array.isArray(students)) {
-      return [];
-    }
-
-
     return students.filter((student) => {
-
       const studentClass =
-        student.className ||
-        student.class ||
-        student.class_name ||
-        "";
+        student.className || student.class || student.class_name || "";
 
+      // Students without a class field are included in this class.
+      if (!studentClass) return true;
 
-      if (!studentClass) {
-        return true;
-      }
-
-
-      return (
-        String(studentClass)
-          .toLowerCase()
-          .trim() ===
-        String(assignedClass)
-          .toLowerCase()
-          .trim()
-      );
-
+      return normalize(studentClass) === normalize(assignedClass);
     });
+  }, [students, assignedClass]);
 
-  }, [
-    students,
-    assignedClass,
-  ]);
+  const todayAttendance = useMemo(() => {
+    return attendance.filter((record) => {
+      const recordDate =
+        record.date ||
+        record.attendanceDate ||
+        (record.createdAt
+          ? String(record.createdAt).split("T")[0]
+          : "");
 
+      return recordDate === todayDate;
+    });
+  }, [attendance, todayDate]);
 
-  /* =======================================================
-     TODAY
-  ======================================================= */
-
-  const today = new Date();
-
-  const todayDate =
-    today.toISOString().split("T")[0];
-
-
-  const dayNames = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
-
-
-  const todayName =
-    dayNames[today.getDay()];
-
-
-  /* =======================================================
-     TODAY ATTENDANCE
-  ======================================================= */
-
-  const todayAttendance =
-    useMemo(() => {
-
-      if (!Array.isArray(attendance)) {
-        return [];
-      }
-
-
-      return attendance.filter(
-        (record) => {
-
-          const recordDate =
-            record.date ||
-            record.attendanceDate ||
-            (
-              record.createdAt
-                ? String(
-                    record.createdAt
-                  ).split("T")[0]
-                : ""
-            );
-
-
-          return (
-            recordDate ===
-            todayDate
-          );
-
-        }
-      );
-
-    }, [
-      attendance,
-      todayDate,
-    ]);
-
-
-  /* =======================================================
-     PRESENT STUDENTS
-  ======================================================= */
-
-  const presentStudents =
-    useMemo(() => {
-
-      let count = 0;
-
-
-      classStudents.forEach(
-        (student) => {
-
-          const studentId =
-            student.studentId ||
-            student.id ||
-            student.rollNumber ||
-            student.registerNumber;
-
-
-          const record =
-            todayAttendance.find(
-              (item) => {
-
-                const attendanceStudentId =
-                  item.studentId ||
-                  item.student_id ||
-                  item.studentIdNumber ||
-                  item.rollNumber ||
-                  item.registerNumber;
-
-
-                return (
-                  String(
-                    attendanceStudentId
-                  ) ===
-                  String(studentId)
-                );
-
-              }
-            );
-
-
-          if (
-            record &&
-            (
-              record.status ===
-                "Present" ||
-              record.status ===
-                "present" ||
-              record.present ===
-                true ||
-              record.attendance ===
-                true
-            )
-          ) {
-
-            count++;
-
-          }
-
-        }
-      );
-
-
-      return count;
-
-    }, [
-      classStudents,
-      todayAttendance,
-    ]);
-
-
-  /* =======================================================
-     ABSENT STUDENTS
-  ======================================================= */
-
-  const absentStudents =
-    Math.max(
-      classStudents.length -
-        presentStudents,
-      0
+  const presentIds = useMemo(() => {
+    return new Set(
+      todayAttendance
+        .filter(isPresent)
+        .map(getAttendanceStudentId)
+        .filter(Boolean)
     );
+  }, [todayAttendance]);
 
+  const presentStudents = classStudents.filter((student) =>
+    presentIds.has(getStudentId(student))
+  ).length;
 
-  /* =======================================================
-     ATTENDANCE PERCENTAGE
-  ======================================================= */
+  const absentStudents = Math.max(
+    classStudents.length - presentStudents,
+    0
+  );
 
   const attendancePercentage =
     classStudents.length > 0
-      ? Math.round(
-          (
-            presentStudents /
-            classStudents.length
-          ) * 100
-        )
+      ? Math.round((presentStudents / classStudents.length) * 100)
       : 0;
 
+  const todayTimetable = useMemo(() => {
+    return timetable
+      .filter((item) => {
+        const day = item.day || item.dayName || item.weekDay || "";
+        return normalize(day) === normalize(todayName);
+      })
+      .filter((item) => {
+        const itemClass = item.className || item.class || "";
+        return (
+          !itemClass || normalize(itemClass) === normalize(assignedClass)
+        );
+      })
+      .sort((a, b) =>
+        String(a.startTime || a.time || "").localeCompare(
+          String(b.startTime || b.time || "")
+        )
+      );
+  }, [timetable, todayName, assignedClass]);
 
-  /* =======================================================
-     TODAY TIMETABLE
-  ======================================================= */
-
-  const todayTimetable =
-    useMemo(() => {
-
-      if (!Array.isArray(timetable)) {
-        return [];
-      }
-
-
-      return timetable
-        .filter((item) => {
-
-          const day =
-            item.day ||
-            item.dayName ||
-            item.weekDay ||
-            "";
-
-
-          return (
-            String(day)
-              .toLowerCase()
-              .trim() ===
-            todayName
-              .toLowerCase()
-              .trim()
-          );
-
-        })
-        .filter((item) => {
-
-          const itemClass =
-            item.className ||
-            item.class ||
-            "";
-
-
-          if (!itemClass) {
-            return true;
-          }
-
-
-          return (
-            String(itemClass)
-              .toLowerCase()
-              .trim() ===
-            String(assignedClass)
-              .toLowerCase()
-              .trim()
-          );
-
-        });
-
-    }, [
-      timetable,
-      todayName,
-      assignedClass,
-    ]);
-
-
-  /* =======================================================
-     RECENT ALERTS
-  ======================================================= */
-
-  const recentAlerts =
-    useMemo(() => {
-
-      if (!Array.isArray(alerts)) {
-        return [];
-      }
-
-
-      return [...alerts]
-        .sort((a, b) => {
-
-          const dateA =
-            new Date(
-              a.createdAt ||
-              a.date ||
-              0
-            ).getTime();
-
-
-          const dateB =
-            new Date(
-              b.createdAt ||
-              b.date ||
-              0
-            ).getTime();
-
-
-          return dateB - dateA;
-
-        })
-        .slice(0, 5);
-
-    }, [alerts]);
-
-
-  /* =======================================================
-     QUICK ACTION
-  ======================================================= */
-
-  const navigate =
-    useNavigate();
-
-
-  /* =======================================================
-     DASHBOARD CONTENT
-  ======================================================= */
+  const recentAlerts = useMemo(() => {
+    return [...alerts]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt || b.date || 0).getTime() -
+          new Date(a.createdAt || a.date || 0).getTime()
+      )
+      .slice(0, 5);
+  }, [alerts]);
 
   return (
     <AdvisorLayout
       title="Dashboard"
       description="Manage and monitor your assigned class."
     >
-
-
-      {/* =================================================
-          ASSIGNED CLASS
-      ================================================= */}
-
       <div className="advisor-class-banner">
-
         <div>
-
-          <span>
-            ASSIGNED CLASS
-          </span>
-
-          <h2>
-            {assignedClass}
-          </h2>
-
-          <p>
-            {user?.department ||
-              "Information Technology"}
-          </p>
-
+          <span>ASSIGNED CLASS</span>
+          <h2>{assignedClass}</h2>
+          <p>{user?.department || "Information Technology"}</p>
         </div>
-
-
-        <div className="advisor-class-icon">
-          ♟
-        </div>
-
+        <div className="advisor-class-icon">♟</div>
       </div>
-
-
-      {/* =================================================
-          STAT CARDS
-      ================================================= */}
 
       <div className="advisor-stat-grid">
-
-
-        {/* TOTAL STUDENTS */}
-
         <div className="advisor-stat-card">
-
-          <div className="advisor-stat-icon students">
-            ♙
-          </div>
-
+          <div className="advisor-stat-icon students">♙</div>
           <div className="advisor-stat-content">
-
-            <span>
-              TOTAL STUDENTS
-            </span>
-
-            <strong>
-              {classStudents.length}
-            </strong>
-
-            <small>
-              Students in your class
-            </small>
-
+            <span>TOTAL STUDENTS</span>
+            <strong>{classStudents.length}</strong>
+            <small>Students in your class</small>
           </div>
-
         </div>
 
-
-        {/* PRESENT */}
-
         <div className="advisor-stat-card">
-
-          <div className="advisor-stat-icon present">
-            ✓
-          </div>
-
+          <div className="advisor-stat-icon present">✓</div>
           <div className="advisor-stat-content">
-
-            <span>
-              PRESENT TODAY
-            </span>
-
-            <strong>
-              {presentStudents}
-            </strong>
-
-            <small>
-              Students present
-            </small>
-
+            <span>PRESENT TODAY</span>
+            <strong>{presentStudents}</strong>
+            <small>Students present</small>
           </div>
-
         </div>
 
-
-        {/* ABSENT */}
-
         <div className="advisor-stat-card">
-
-          <div className="advisor-stat-icon absent">
-            !
-          </div>
-
+          <div className="advisor-stat-icon absent">!</div>
           <div className="advisor-stat-content">
-
-            <span>
-              ABSENT TODAY
-            </span>
-
-            <strong>
-              {absentStudents}
-            </strong>
-
-            <small>
-              Students absent
-            </small>
-
+            <span>ABSENT TODAY</span>
+            <strong>{absentStudents}</strong>
+            <small>Students absent</small>
           </div>
-
         </div>
 
-
-        {/* ATTENDANCE */}
-
         <div className="advisor-stat-card">
-
-          <div className="advisor-stat-icon attendance">
-            %
-          </div>
-
+          <div className="advisor-stat-icon attendance">%</div>
           <div className="advisor-stat-content">
-
-            <span>
-              ATTENDANCE
-            </span>
-
-            <strong>
-              {attendancePercentage}%
-            </strong>
-
-            <small>
-              Today's attendance
-            </small>
-
+            <span>ATTENDANCE</span>
+            <strong>{attendancePercentage}%</strong>
+            <small>Today's attendance</small>
           </div>
-
         </div>
-
       </div>
 
-
-      {/* =================================================
-          MAIN DASHBOARD GRID
-      ================================================= */}
-
       <div className="advisor-dashboard-grid">
-
-
-        {/* =================================================
-            ATTENDANCE CARD
-        ================================================= */}
-
         <section className="advisor-dashboard-card attendance-card">
-
           <div className="advisor-card-header">
-
             <div>
-
-              <span className="advisor-card-label">
-                TODAY
-              </span>
-
-              <h3>
-                Attendance Overview
-              </h3>
-
+              <span className="advisor-card-label">TODAY</span>
+              <h3>Attendance Overview</h3>
             </div>
-
             <button
               type="button"
               className="advisor-view-button"
-              onClick={() =>
-                navigate(
-                  "/advisor/attendance"
-                )
-              }
+              onClick={() => navigate("/advisor/attendance")}
             >
               View Attendance
             </button>
-
           </div>
-
 
           <div className="advisor-attendance-body">
-
-
-            {/* CIRCLE */}
-
             <div
               className="advisor-attendance-circle"
-              style={{
-                "--attendance":
-                  `${attendancePercentage}%`,
-              }}
+              style={{ "--attendance": `${attendancePercentage}%` }}
             >
-
               <div className="advisor-attendance-circle-inner">
-
-                <strong>
-                  {attendancePercentage}%
-                </strong>
-
-                <span>
-                  Present
-                </span>
-
+                <strong>{attendancePercentage}%</strong>
+                <span>Present</span>
               </div>
-
             </div>
-
-
-            {/* DETAILS */}
 
             <div className="advisor-attendance-details">
-
               <div className="advisor-attendance-item">
-
-                <span className="attendance-dot present-dot">
-                </span>
-
+                <span className="attendance-dot present-dot" />
                 <div>
-
-                  <strong>
-                    {presentStudents}
-                  </strong>
-
-                  <span>
-                    Present
-                  </span>
-
+                  <strong>{presentStudents}</strong>
+                  <span>Present</span>
                 </div>
-
               </div>
 
-
               <div className="advisor-attendance-item">
-
-                <span className="attendance-dot absent-dot">
-                </span>
-
+                <span className="attendance-dot absent-dot" />
                 <div>
-
-                  <strong>
-                    {absentStudents}
-                  </strong>
-
-                  <span>
-                    Absent
-                  </span>
-
+                  <strong>{absentStudents}</strong>
+                  <span>Absent</span>
                 </div>
-
               </div>
 
-
               <div className="advisor-attendance-item">
-
-                <span className="attendance-dot total-dot">
-                </span>
-
+                <span className="attendance-dot total-dot" />
                 <div>
-
-                  <strong>
-                    {classStudents.length}
-                  </strong>
-
-                  <span>
-                    Total
-                  </span>
-
+                  <strong>{classStudents.length}</strong>
+                  <span>Total</span>
                 </div>
-
               </div>
-
             </div>
-
           </div>
-
         </section>
 
-
-        {/* =================================================
-            TIMETABLE
-        ================================================= */}
-
         <section className="advisor-dashboard-card">
-
           <div className="advisor-card-header">
-
             <div>
-
               <span className="advisor-card-label">
                 {todayName.toUpperCase()}
               </span>
-
-              <h3>
-                Today's Timetable
-              </h3>
-
+              <h3>Today's Timetable</h3>
             </div>
-
             <button
               type="button"
               className="advisor-view-button"
-              onClick={() =>
-                navigate(
-                  "/advisor/timetable"
-                )
-              }
+              onClick={() => navigate("/advisor/timetable")}
             >
               View All
             </button>
-
           </div>
-
 
           <div className="advisor-timetable-list">
-
             {todayTimetable.length === 0 ? (
-
               <div className="advisor-empty-state">
-
-                <div className="advisor-empty-icon">
-                  ▣
-                </div>
-
-                <p>
-                  No timetable available
-                </p>
-
-                <span>
-                  No classes scheduled for today.
-                </span>
-
+                <div className="advisor-empty-icon">▣</div>
+                <p>No timetable available</p>
+                <span>No classes scheduled for today.</span>
               </div>
-
             ) : (
+              todayTimetable.slice(0, 5).map((item, index) => (
+                <div
+                  className="advisor-timetable-item"
+                  key={item.id || index}
+                >
+                  <div className="advisor-time">
+                    <strong>
+                      {item.startTime || item.time || `Period ${index + 1}`}
+                    </strong>
+                    {item.endTime && <span>{item.endTime}</span>}
+                  </div>
 
-              todayTimetable
-                .slice(0, 5)
-                .map(
-                  (item, index) => (
+                  <div className="advisor-subject">
+                    <strong>
+                      {item.subject || item.subjectName || "Subject"}
+                    </strong>
+                    <span>
+                      {item.faculty ||
+                        item.teacher ||
+                        item.facultyName ||
+                        "Faculty"}
+                    </span>
+                  </div>
 
-                    <div
-                      className="advisor-timetable-item"
-                      key={
-                        item.id ||
-                        index
-                      }
-                    >
-
-                      <div className="advisor-time">
-
-                        <strong>
-                          {item.startTime ||
-                            item.time ||
-                            `Period ${index + 1}`}
-                        </strong>
-
-                        {item.endTime && (
-                          <span>
-                            {item.endTime}
-                          </span>
-                        )}
-
-                      </div>
-
-
-                      <div className="advisor-subject">
-
-                        <strong>
-                          {item.subject ||
-                            item.subjectName ||
-                            "Subject"}
-                        </strong>
-
-                        <span>
-                          {item.faculty ||
-                            item.teacher ||
-                            item.facultyName ||
-                            "Faculty"}
-                        </span>
-
-                      </div>
-
-
-                      <div className="advisor-room">
-
-                        {item.room ||
-                          item.classroom ||
-                          "—"}
-
-                      </div>
-
-                    </div>
-
-                  )
-                )
-
+                  <div className="advisor-room">
+                    {item.room || item.classroom || "—"}
+                  </div>
+                </div>
+              ))
             )}
-
           </div>
-
         </section>
 
-
-        {/* =================================================
-            RECENT ALERTS
-        ================================================= */}
-
         <section className="advisor-dashboard-card advisor-alert-card">
-
           <div className="advisor-card-header">
-
             <div>
-
-              <span className="advisor-card-label">
-                NOTIFICATIONS
-              </span>
-
-              <h3>
-                Recent Alerts
-              </h3>
-
+              <span className="advisor-card-label">NOTIFICATIONS</span>
+              <h3>Recent Alerts</h3>
             </div>
-
             <button
               type="button"
               className="advisor-view-button"
-              onClick={() =>
-                navigate(
-                  "/advisor/alerts"
-                )
-              }
+              onClick={() => navigate("/advisor/alerts")}
             >
               View Alerts
             </button>
-
           </div>
-
 
           <div className="advisor-alert-list">
-
             {recentAlerts.length === 0 ? (
-
               <div className="advisor-empty-state">
-
-                <div className="advisor-empty-icon">
-                  ✓
-                </div>
-
-                <p>
-                  No recent alerts
-                </p>
-
-                <span>
-                  Everything looks normal.
-                </span>
-
+                <div className="advisor-empty-icon">✓</div>
+                <p>No recent alerts</p>
+                <span>Everything looks normal.</span>
               </div>
-
             ) : (
-
-              recentAlerts.map(
-                (alert, index) => (
-
-                  <div
-                    className="advisor-alert-item"
-                    key={
-                      alert.id ||
-                      index
-                    }
-                  >
-
-                    <div className="advisor-alert-icon">
-                      ⚠
-                    </div>
-
-                    <div className="advisor-alert-content">
-
-                      <strong>
-                        {alert.title ||
-                          alert.type ||
-                          "Classroom Alert"}
-                      </strong>
-
-                      <p>
-                        {alert.message ||
-                          alert.description ||
-                          "An alert requires your attention."}
-                      </p>
-
-                      <span>
-                        {alert.createdAt ||
-                          alert.date ||
-                          ""}
-                      </span>
-
-                    </div>
-
+              recentAlerts.map((alert, index) => (
+                <div
+                  className="advisor-alert-item"
+                  key={alert.id || index}
+                >
+                  <div className="advisor-alert-icon">⚠</div>
+                  <div className="advisor-alert-content">
+                    <strong>
+                      {alert.title || alert.type || "Classroom Alert"}
+                    </strong>
+                    <p>
+                      {alert.message ||
+                        alert.description ||
+                        "An alert requires your attention."}
+                    </p>
+                    <span>{alert.createdAt || alert.date || ""}</span>
                   </div>
-
-                )
-              )
-
+                </div>
+              ))
             )}
-
           </div>
-
         </section>
-
-
-        {/* =================================================
-            QUICK ACTIONS
-        ================================================= */}
 
         <section className="advisor-dashboard-card">
-
           <div className="advisor-card-header">
-
             <div>
-
-              <span className="advisor-card-label">
-                ACTIONS
-              </span>
-
-              <h3>
-                Quick Actions
-              </h3>
-
+              <span className="advisor-card-label">ACTIONS</span>
+              <h3>Quick Actions</h3>
             </div>
-
           </div>
-
 
           <div className="advisor-quick-actions">
-
+            <button
+              type="button"
+              onClick={() => navigate("/advisor/students")}
+            >
+              <span>♙</span>
+              <div>
+                <strong>Manage Students</strong>
+                <small>Add, remove, and view students</small>
+              </div>
+            </button>
 
             <button
               type="button"
-              onClick={() =>
-                navigate(
-                  "/advisor/students"
-                )
-              }
+              onClick={() => navigate("/advisor/attendance")}
             >
-
-              <span>
-                ♙
-              </span>
-
+              <span>✓</span>
               <div>
-
-                <strong>
-                  Manage Students
-                </strong>
-
-                <small>
-                  View class students
-                </small>
-
+                <strong>Attendance</strong>
+                <small>Check attendance records</small>
               </div>
-
             </button>
-
 
             <button
               type="button"
-              onClick={() =>
-                navigate(
-                  "/advisor/attendance"
-                )
-              }
+              onClick={() => navigate("/advisor/classroom")}
             >
-
-              <span>
-                ✓
-              </span>
-
+              <span>◉</span>
               <div>
-
-                <strong>
-                  Attendance
-                </strong>
-
-                <small>
-                  Check attendance
-                </small>
-
+                <strong>Live Classroom</strong>
+                <small>Open camera-based face recognition</small>
               </div>
-
             </button>
-
 
             <button
               type="button"
-              onClick={() =>
-                navigate(
-                  "/advisor/classroom"
-                )
-              }
+              onClick={() => navigate("/advisor/reports")}
             >
-
-              <span>
-                ◉
-              </span>
-
+              <span>▥</span>
               <div>
-
-                <strong>
-                  Classroom
-                </strong>
-
-                <small>
-                  Start classroom session
-                </small>
-
+                <strong>Reports</strong>
+                <small>View attendance reports</small>
               </div>
-
             </button>
-
-
-            <button
-              type="button"
-              onClick={() =>
-                navigate(
-                  "/advisor/reports"
-                )
-              }
-            >
-
-              <span>
-                ▥
-              </span>
-
-              <div>
-
-                <strong>
-                  Reports
-                </strong>
-
-                <small>
-                  View class reports
-                </small>
-
-              </div>
-
-            </button>
-
           </div>
-
         </section>
-
       </div>
-
     </AdvisorLayout>
   );
 }
 
-
-/* =========================================================
-   EXPORTS
-========================================================= */
-
-export {
-  AdvisorLayout,
-};
-
+export { AdvisorLayout };
 export default AdvisorDashboard;

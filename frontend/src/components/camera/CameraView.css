@@ -601,14 +601,16 @@
   overflow: hidden;
 }
 
-.camera-preview-container .camera-video {
+.camera-preview-container .camera-video 
+{
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-.camera-face-overlay {
+.camera-face-overlay 
+{
   position: absolute;
   inset: 0;
   width: 100%;
