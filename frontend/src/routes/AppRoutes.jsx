@@ -1,18 +1,18 @@
 
 import { Navigate, Route, Routes } from "react-router-dom";
-
+import Reports from "../pages/advisor/reports/Reports";
 import Login from "../pages/auth/login/Login";
 import Attendance from "../pages/advisor/attendance/Attendance";
 import AdminDashboard from "../pages/admin/dashboard/AdminDashboard";
 import AdminManagement from "../pages/admin/AdminManagement";
-
+import Alerts from "../pages/advisor/alerts/Alerts";
 import HodDashboard from "../pages/hod/dashboard/HodDashboard";
 import DashboardLayout from "../layouts/DashboardLayout";
 import GlobalTheme from "../components/GlobalTheme";
 import AdvisorDashboard, {
   AdvisorLayout,
 } from "../pages/advisor/dashboard/AdvisorDashboard";
-
+import Timetable from "../pages/advisor/timetable/Timetable";
 import AdvisorStudents from "../pages/advisor/students/AdvisorStudents";
 import AdvisorClassroom from "../pages/advisor/classroom/AdvisorClassroom";
 
@@ -214,29 +214,52 @@ function AppRoutes() {
 
 {/* Other advisor modules */}
 
-{[
-  ["timetable", "Timetable", "View your assigned class timetable."],
-  ["alerts", "Alerts", "View classroom and attendance alerts."],
-  ["reports", "Reports", "View attendance and classroom reports."],
-].map(([path, title, description]) => (
-  <Route
-    key={path}
-    path={`/advisor/${path}`}
-    element={
-      <ProtectedRoute allowedRoles={["CLASS_ADVISOR"]}>
-        <AdvisorLayout
-          title={title}
-          description={description}
-        >
-          <ModulePage
-            title={title}
-            description={description}
-          />
-        </AdvisorLayout>
-      </ProtectedRoute>
-    }
-  />
-))}
+
+{/* Actual timetable upload and management page */}
+
+<Route
+  path="/advisor/timetable"
+  element={
+    <ProtectedRoute allowedRoles={["CLASS_ADVISOR"]}>
+      <AdvisorLayout
+        title="Timetable"
+        description="Upload, extract, review, and manage your class timetable."
+      >
+        <Timetable />
+      </AdvisorLayout>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/advisor/alerts"
+  element={
+    <ProtectedRoute allowedRoles={["CLASS_ADVISOR"]}>
+      <AdvisorLayout
+        title="Alerts"
+        description="View classroom and attendance alerts."
+      >
+        <Alerts />
+      </AdvisorLayout>
+    </ProtectedRoute>
+  }
+/>
+
+
+<Route
+  path="/advisor/reports"
+  element={
+    <ProtectedRoute allowedRoles={["CLASS_ADVISOR"]}>
+      <AdvisorLayout
+        title="Reports"
+        description="View attendance and classroom reports."
+      >
+        <Reports />
+      </AdvisorLayout>
+    </ProtectedRoute>
+  }
+/>
+
 
           
 

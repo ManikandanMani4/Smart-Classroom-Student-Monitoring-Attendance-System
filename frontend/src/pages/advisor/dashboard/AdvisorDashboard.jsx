@@ -97,7 +97,7 @@ function AdvisorLayout({ children, title, description }) {
 
         <div className="advisor-role">
           <div className="advisor-role-label">LOGGED IN AS</div>
-          <div className="advisor-role-name">Class Advisor</div>
+          <div className="advisor-role-name">III IT - B Advisor</div>
         </div>
 
         <nav className="advisor-navigation">
@@ -126,7 +126,7 @@ function AdvisorLayout({ children, title, description }) {
               {user?.name?.charAt(0)?.toUpperCase() || "A"}
             </div>
             <div className="advisor-user-info">
-              <strong>{user?.name || "Class Advisor"}</strong>
+              <strong>{user?.name || "III IT - B Advisor"}</strong>
               <span>{user?.className || "III IT - A"}</span>
             </div>
           </div>

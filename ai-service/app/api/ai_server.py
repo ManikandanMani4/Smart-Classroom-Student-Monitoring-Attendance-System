@@ -5,15 +5,25 @@ import json
 import os
 import re
 import numpy as np
-from app.recognition.embedding import get_embedding
-from flask import Flask, jsonify, request
 
+import tempfile
+
+from flask_cors import CORS
+from app.timetable_ocr import extract_timetable
+from flask import Flask, jsonify, request
+from app.recognition.embedding import get_embedding
 from app.detection.face_detector import FaceDetector
 from app.recognition.face_recognizer import FaceRecognizer
 
-
 app = Flask(__name__)
-
+CORS(app, resources={
+    r"/api/timetable/*": {
+        "origins": [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173"
+        ]
+    }
+})
 
 print("==============================================")
 print("Starting SmartClassroom AI Service")
@@ -30,6 +40,10 @@ print("AI Service Ready")
 print("==============================================")
 
 
+# --------------------------------------------------
+# HEALTH CHECK
+# --------------------------------------------------
+
 @app.route("/", methods=["GET"])
 def health_check():
     return jsonify({
@@ -39,15 +53,76 @@ def health_check():
     })
 
 
-@app.route("/api/ai/recognize", methods=["POST"])
-def recognize_frame():
+# --------------------------------------------------
+# TIMETABLE OCR EXTRACTION
+# --------------------------------------------------
+
+
+@app.route("/api/timetable/extract", methods=["POST"])
+def extract_timetable_route():
+    import tempfile
+    from app.timetable_ocr import extract_timetable_data
+
+    if "file" not in request.files:
+        return jsonify({
+            "success": False,
+            "error": "No timetable file was uploaded."
+        }), 400
+
+    uploaded_file = request.files["file"]
+    extension = os.path.splitext(uploaded_file.filename)[1].lower()
+
+    if extension not in {".png", ".jpg", ".jpeg", ".pdf"}:
+        return jsonify({
+            "success": False,
+            "error": "Upload a PNG, JPG, JPEG, or PDF file."
+        }), 400
+
+    temporary_path = None
 
     try:
+        with tempfile.NamedTemporaryFile(
+            suffix=extension, delete=False
+        ) as temp:
+            temporary_path = temp.name
 
-        # ------------------------------------------
-        # 1. Check whether frame was received
-        # ------------------------------------------
+        uploaded_file.save(temporary_path)
+        result = extract_timetable_data(temporary_path)
 
+        if not result["text"].strip():
+            return jsonify({
+                "success": False,
+                "error": "No text was detected in the uploaded file."
+            }), 422
+
+        return jsonify({
+            "success": True,
+            "text": result["text"],
+            "timetable": result["timetable"],
+            "other_information": result["other_information"],
+            "table_detected": result["table_detected"],
+            "entries": []
+        }), 200
+
+    except Exception:
+        app.logger.exception("Timetable extraction failed")
+        return jsonify({
+            "success": False,
+            "error": "Timetable extraction failed. Check the AI service logs."
+        }), 500
+
+    finally:
+        if temporary_path and os.path.exists(temporary_path):
+            os.remove(temporary_path)
+
+
+# --------------------------------------------------
+# FACE RECOGNITION
+# --------------------------------------------------
+
+@app.route("/api/ai/recognize", methods=["POST"])
+def recognize_frame():
+    try:
         if "frame" not in request.files:
             return jsonify({
                 "success": False,
@@ -62,10 +137,6 @@ def recognize_frame():
                 "message": "Empty frame received."
             }), 400
 
-        # ------------------------------------------
-        # 2. Read image into memory
-        # ------------------------------------------
-
         image_bytes = uploaded_file.read()
 
         if not image_bytes:
@@ -73,10 +144,6 @@ def recognize_frame():
                 "success": False,
                 "message": "Frame contains no data."
             }), 400
-
-        # ------------------------------------------
-        # 3. Convert bytes to OpenCV image
-        # ------------------------------------------
 
         image_array = np.frombuffer(
             image_bytes,
@@ -94,20 +161,10 @@ def recognize_frame():
                 "message": "Unable to decode image."
             }), 400
 
-        # ------------------------------------------
-        # 4. Detect faces
-        # ------------------------------------------
-
         faces = detector.detect(frame)
-
         results = []
 
-        # ------------------------------------------
-        # 5. Recognize each detected face
-        # ------------------------------------------
-
         for face in faces:
-
             student_id, confidence = recognizer.recognize(
                 face,
                 threshold=0.5
@@ -118,29 +175,15 @@ def recognize_frame():
             result = {
                 "student_id": student_id if recognized else None,
                 "recognized": recognized,
-                "confidence": round(
-                    float(confidence),
-                    4
-                )
+                "confidence": round(float(confidence), 4)
             }
 
-            # --------------------------------------
-            # 6. Add face bounding box
-            # --------------------------------------
-
             if hasattr(face, "bbox") and face.bbox is not None:
-
-                bbox = np.asarray(
+                result["bbox"] = np.asarray(
                     face.bbox
                 ).astype(int).tolist()
 
-                result["bbox"] = bbox
-
             results.append(result)
-
-        # ------------------------------------------
-        # 7. Return recognition results
-        # ------------------------------------------
 
         return jsonify({
             "success": True,
@@ -149,17 +192,18 @@ def recognize_frame():
         })
 
     except Exception as error:
-
-        print("==============================================")
-        print("AI SERVICE ERROR")
-        print(error)
-        print("==============================================")
+        app.logger.exception("AI recognition failed")
 
         return jsonify({
             "success": False,
             "message": "AI processing failed.",
             "error": str(error)
         }), 500
+
+
+# --------------------------------------------------
+# STUDENT FACE REGISTRATION
+# --------------------------------------------------
 
 @app.route("/api/ai/register", methods=["POST"])
 def register_face():
@@ -195,7 +239,7 @@ def register_face():
 
         student_name = student_name.strip()
 
-        # Accept a base64 image or a data URL from the browser.
+        # Accept a base64 image or browser data URL.
         if image_data.startswith("data:"):
             if "," not in image_data:
                 return jsonify({
@@ -285,7 +329,7 @@ def register_face():
             f"{student_id}.json"
         )
 
-        # Preserve any existing samples for this student.
+        # Preserve existing face samples for this student.
         existing_embeddings = []
 
         if os.path.isfile(embedding_path):
@@ -293,7 +337,10 @@ def register_face():
                 with open(embedding_path, "r", encoding="utf-8") as file:
                     existing_data = json.load(file)
 
-                if "embeddings" in existing_data:
+                if (
+                    isinstance(existing_data, dict)
+                    and "embeddings" in existing_data
+                ):
                     existing_embeddings = existing_data["embeddings"]
                 else:
                     existing_embeddings = [existing_data]
@@ -301,19 +348,21 @@ def register_face():
             except (json.JSONDecodeError, OSError):
                 return jsonify({
                     "success": False,
-                    "message": "Existing embedding file is invalid; no data was changed."
+                    "message": (
+                        "Existing embedding file is invalid; "
+                        "no registration changes were made."
+                    )
                 }), 500
 
         existing_embeddings.append(embedding.tolist())
 
-        # Save in the format supported by FaceRecognizer.
         with open(embedding_path, "w", encoding="utf-8") as file:
             json.dump({
                 "student_id": student_id,
                 "embeddings": existing_embeddings
             }, file, indent=2)
 
-        # Update the student registry without removing other students.
+        # Update the student registry.
         students = []
 
         if os.path.isfile(student_file):
@@ -322,7 +371,9 @@ def register_face():
                     students = json.load(file)
 
                 if not isinstance(students, list):
-                    raise ValueError("Student registry must be a JSON list.")
+                    raise ValueError(
+                        "Student registry must be a JSON list."
+                    )
 
             except (json.JSONDecodeError, OSError, ValueError) as error:
                 return jsonify({
@@ -332,7 +383,11 @@ def register_face():
 
         students = [
             student for student in students
-            if student.get("student_id") != student_id
+            if not (
+                isinstance(student, dict)
+                and str(student.get("student_id", "")).strip().upper()
+                == student_id
+            )
         ]
 
         students.append({
@@ -347,7 +402,7 @@ def register_face():
         with open(student_file, "w", encoding="utf-8") as file:
             json.dump(students, file, indent=2)
 
-        # Make the newly saved face available immediately.
+        # Refresh the recognition cache immediately.
         recognizer.load_embeddings()
 
         return jsonify({
@@ -359,14 +414,113 @@ def register_face():
 
     except Exception as error:
         app.logger.exception("Face registration failed")
+
         return jsonify({
             "success": False,
             "message": "Face registration failed.",
             "error": str(error)
         }), 500
 
-if __name__ == "__main__":
 
+# --------------------------------------------------
+# PERMANENT STUDENT AND FACE DATA DELETION
+# --------------------------------------------------
+
+@app.route("/api/ai/students/<student_id>", methods=["DELETE"])
+def delete_registered_student(student_id):
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,50}", student_id or ""):
+        return jsonify({
+            "success": False,
+            "message": "Invalid student ID."
+        }), 400
+
+    student_id = student_id.strip().upper()
+
+    embedding_dir = os.path.abspath("data/embeddings")
+    student_file = os.path.abspath("data/students/students.json")
+
+    embedding_path = os.path.join(
+        embedding_dir,
+        f"{student_id}.json"
+    )
+
+    try:
+        if os.path.isfile(student_file):
+            with open(student_file, "r", encoding="utf-8") as file:
+                students = json.load(file)
+        else:
+            students = []
+
+        if not isinstance(students, list):
+            return jsonify({
+                "success": False,
+                "message": "Student registry is invalid."
+            }), 500
+
+        registered = any(
+            isinstance(student, dict)
+            and str(student.get("student_id", "")).strip().upper()
+            == student_id
+            for student in students
+        )
+
+        embedding_exists = os.path.isfile(embedding_path)
+
+        if not registered and not embedding_exists:
+            return jsonify({
+                "success": False,
+                "message": "Student was not found."
+            }), 404
+
+        remaining_students = [
+            student for student in students
+            if not (
+                isinstance(student, dict)
+                and str(student.get("student_id", "")).strip().upper()
+                == student_id
+            )
+        ]
+
+        # Save the updated registry.
+        os.makedirs(os.path.dirname(student_file), exist_ok=True)
+
+        temporary_file = student_file + ".tmp"
+
+        with open(temporary_file, "w", encoding="utf-8") as file:
+            json.dump(remaining_students, file, indent=2)
+
+        os.replace(temporary_file, student_file)
+
+        # Delete the student's face embedding.
+        if embedding_exists:
+            os.remove(embedding_path)
+
+        # Remove the student from the in-memory recognizer.
+        recognizer.load_embeddings()
+
+        return jsonify({
+            "success": True,
+            "student_id": student_id,
+            "message": "Student registry entry and face data deleted."
+        })
+
+    except Exception:
+        app.logger.exception("Student deletion failed")
+
+        return jsonify({
+            "success": False,
+            "message": (
+                "Student deletion failed. Check the registry "
+                "and embedding files."
+            )
+        }), 500
+
+
+# --------------------------------------------------
+# START FLASK SERVER
+# --------------------------------------------------
+
+if __name__ == "__main__":
     print("==============================================")
     print("Flask server starting...")
     print("URL: http://127.0.0.1:8000")

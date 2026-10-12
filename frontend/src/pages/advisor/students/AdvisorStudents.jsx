@@ -268,18 +268,72 @@ export default function AdvisorStudents() {
     setShowForm(false);
   }
 
-  function deleteStudent(id) {
-    if (!window.confirm(`Delete student ${id} and all attendance history?`)) {
-      return;
+  
+async function deleteStudent(id) {
+  const studentId = String(id || "").trim();
+
+  if (!studentId) {
+    window.alert("Student ID is missing.");
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `Permanently delete student ${studentId}, face data, and all backend attendance history? This cannot be undone.`
+  );
+
+  if (!confirmed) return;
+
+  setError("");
+
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/students/${encodeURIComponent(studentId)}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok || !result?.success) {
+      throw new Error(
+        result?.message || "Unable to delete the student."
+      );
     }
 
-    const nextStudents = students.filter((s) => getStudentId(s) !== String(id));
+    // Update the browser's local student list.
+    const nextStudents = students.filter(
+      (student) =>
+        getStudentId(student).toUpperCase() !== studentId.toUpperCase()
+    );
+
+    // Remove this student's local attendance entries too.
     const nextAttendance = attendance.filter(
-      (r) => getRecordStudentId(r) !== String(id)
+      (record) =>
+        getRecordStudentId(record).toUpperCase() !==
+        studentId.toUpperCase()
     );
 
     saveData(nextStudents, nextAttendance);
+
+    window.alert(
+      `Student ${studentId} deleted successfully. ` +
+      `${result.deletedAttendanceRecords || 0} backend attendance record(s) removed.`
+    );
+  } catch (error) {
+    console.error("Student deletion failed:", error);
+
+    setError(
+      error.message ||
+      "Deletion failed. Check that both backend services are running."
+    );
+
+    window.alert(
+      error.message ||
+      "Deletion failed. Check that both backend services are running."
+    );
   }
+}
 
   function deleteAttendance(record) {
     if (!window.confirm("Delete this attendance record permanently?")) return;

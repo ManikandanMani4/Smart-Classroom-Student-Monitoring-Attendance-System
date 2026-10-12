@@ -1,0 +1,294 @@
+
+.timetable-page {
+  padding: 26px;
+  box-sizing: border-box;
+  color: #172b4d;
+  background: #f8fafc;
+}
+
+.year-selector,
+.entry-section,
+.weekly-schedule {
+  margin-bottom: 24px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e0e8f3;
+  border-radius: 13px;
+}
+
+.year-selector h1,
+.entry-section h2,
+.weekly-heading h2 {
+  margin-top: 0;
+}
+
+.year-selector p,
+.entry-section > p,
+.weekly-heading p {
+  color: #718096;
+  line-height: 1.5;
+}
+
+.year-selector label {
+  display: block;
+  margin: 18px 0 8px;
+  font-weight: 600;
+}
+
+.year-selector select {
+  width: 100%;
+  max-width: 360px;
+  height: 48px;
+  padding: 0 12px;
+  border: 1px solid #cfdaea;
+  border-radius: 8px;
+  background: white;
+  color: #172b4d;
+}
+
+.entry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px 18px;
+  margin: 22px 0;
+}
+
+.form-field {
+  min-width: 0;
+}
+
+.form-field label,
+.timing-card label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.form-field input,
+.form-field select,
+.timing-card input {
+  width: 100%;
+  height: 46px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1px solid #cfdaea;
+  border-radius: 8px;
+  background: #fff;
+  color: #172b4d;
+  font-size: 14px;
+}
+
+.approve-button,
+.secondary-button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.approve-button {
+  background: #15803d;
+  color: white;
+}
+
+.secondary-button {
+  margin-top: 18px;
+  background: #e8f0ff;
+  color: #2855d9;
+}
+
+.success-message {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.status-message {
+  color: #475569;
+  font-weight: 500;
+}
+
+.weekly-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.weekly-heading p {
+  margin-bottom: 0;
+}
+
+.schedule-count {
+  padding: 8px 12px;
+  border-radius: 20px;
+  background: #e8f5e9;
+  color: #176b45;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.timing-settings {
+  margin-bottom: 22px;
+  padding: 16px;
+  border: 1px solid #e0e8f3;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.timing-settings summary {
+  cursor: pointer;
+  color: #2855d9;
+  font-weight: 600;
+}
+
+.timing-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.timing-card {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e0e8f3;
+  border-radius: 8px;
+  background: white;
+}
+
+.timing-card strong {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.timing-card label {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.weekly-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #dce7df;
+  border-radius: 9px;
+}
+
+.weekly-table {
+  width: 100%;
+  min-width: 1350px;
+  border-collapse: collapse;
+}
+
+.weekly-table th,
+.weekly-table td {
+  min-width: 105px;
+  padding: 12px 9px;
+  border: 1px solid #dce7df;
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.weekly-table thead th {
+  background: #e8f5e9;
+  color: #176b45;
+  font-size: 13px;
+}
+
+.weekly-table th small {
+  display: block;
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: normal;
+}
+
+.weekly-table .day-column {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 105px;
+  background: #f1f5f9;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.weekly-table thead .day-column {
+  z-index: 2;
+  background: #dcefe0;
+}
+
+.weekly-table tbody td {
+  height: 78px;
+  background: white;
+}
+
+.weekly-table .special-period {
+  background: #fff3d6;
+  color: #8a5b00;
+}
+
+.schedule-subject strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #176b45;
+  font-size: 13px;
+}
+
+.schedule-subject small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.empty-period {
+  color: #94a3b8;
+}
+
+.delete-cell-button {
+  margin-top: 8px;
+  padding: 4px 7px;
+  border: none;
+  border-radius: 5px;
+  background: #fff1f2;
+  color: #be123c;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+@media (max-width: 1000px) {
+  .timing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .entry-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .timetable-page {
+    padding: 12px;
+  }
+
+  .year-selector,
+  .entry-section,
+  .weekly-schedule {
+    padding: 16px;
+  }
+
+  .entry-grid,
+  .timing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .approve-button,
+  .secondary-button {
+    width: 100%;
+  }
+}

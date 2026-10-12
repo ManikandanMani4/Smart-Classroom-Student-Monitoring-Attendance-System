@@ -10,10 +10,7 @@ const PORT = 5000;
 
 const AI_URL = "http://127.0.0.1:8000/api/ai/recognize";
 const REGISTER_URL = "http://127.0.0.1:8000/api/ai/register";
-
-// --------------------------------------------------
-// PATHS AND MIDDLEWARE
-// --------------------------------------------------
+const AI_DELETE_URL = "http://127.0.0.1:8000/api/ai/students";
 
 const AI_SERVICE_DIR = path.resolve(__dirname, "../ai-service");
 
@@ -24,14 +21,18 @@ const STUDENTS_FILE = path.join(
   "students.json"
 );
 
-const ATTENDANCE_DIR = path.join(__dirname, "data", "attendance");
+const ATTENDANCE_DIR = path.join(
+  __dirname,
+  "data",
+  "attendance"
+);
 
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json({ limit: "10mb" }));
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
 // --------------------------------------------------
@@ -70,7 +71,7 @@ async function readJsonFile(filePath, fallback) {
 
 async function writeJsonFile(filePath, data) {
   await fs.promises.mkdir(path.dirname(filePath), {
-    recursive: true,
+    recursive: true
   });
 
   const temporaryPath = `${filePath}.tmp`;
@@ -122,7 +123,7 @@ async function recordRecognizedFaces(faces) {
             face.student_id.trim()
         )
         .map((face) => face.student_id.trim().toUpperCase())
-    ),
+    )
   ];
 
   if (recognizedIds.length === 0) {
@@ -134,7 +135,7 @@ async function recordRecognizedFaces(faces) {
   const studentMap = new Map(
     students.map((student) => [
       String(student.student_id || "").trim().toUpperCase(),
-      student,
+      student
     ])
   );
 
@@ -154,7 +155,7 @@ async function recordRecognizedFaces(faces) {
     if (
       records.some(
         (record) =>
-          String(record.studentId).toUpperCase() === studentId
+          String(record.studentId).trim().toUpperCase() === studentId
       )
     ) {
       continue;
@@ -167,11 +168,10 @@ async function recordRecognizedFaces(faces) {
       subject: "",
       period: "",
       timestamp: now.toISOString(),
-      status: "Present",
+      status: "Present"
     });
 
     changed = true;
-
     console.log("Attendance recorded:", studentId);
   }
 
@@ -187,7 +187,7 @@ async function recordRecognizedFaces(faces) {
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "SmartClassroom backend is running.",
+    message: "SmartClassroom backend is running."
   });
 });
 
@@ -203,7 +203,7 @@ app.post(
       if (!req.file) {
         return res.status(400).json({
           success: false,
-          message: "No frame received.",
+          message: "No frame received."
         });
       }
 
@@ -212,7 +212,7 @@ app.post(
       formData.append(
         "frame",
         new Blob([req.file.buffer], {
-          type: req.file.mimetype || "image/jpeg",
+          type: req.file.mimetype || "image/jpeg"
         }),
         req.file.originalname || "classroom-frame.jpg"
       );
@@ -220,7 +220,7 @@ app.post(
       const aiResponse = await fetch(AI_URL, {
         method: "POST",
         body: formData,
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(30000)
       });
 
       const result = await aiResponse.json().catch(() => null);
@@ -228,7 +228,7 @@ app.post(
       if (!result) {
         return res.status(502).json({
           success: false,
-          message: "Python AI service returned an invalid response.",
+          message: "Python AI service returned an invalid response."
         });
       }
 
@@ -244,7 +244,7 @@ app.post(
 
           return res.status(500).json({
             success: false,
-            message: "Faces were recognized, but attendance could not be saved.",
+            message: "Faces were recognized, but attendance could not be saved."
           });
         }
       }
@@ -255,7 +255,7 @@ app.post(
 
       return res.status(502).json({
         success: false,
-        message: "Could not reach the Python AI service.",
+        message: "Could not reach the Python AI service."
       });
     }
   }
@@ -277,7 +277,7 @@ app.post("/api/ai/register", async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Student ID and captured image are required.",
+        message: "Student ID and captured image are required."
       });
     }
 
@@ -288,9 +288,9 @@ app.post("/api/ai/register", async (req, res) => {
         studentId: studentId.trim(),
         studentName:
           typeof studentName === "string" ? studentName.trim() : "",
-        image,
+        image
       }),
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(30000)
     });
 
     const result = await aiResponse.json().catch(() => null);
@@ -298,7 +298,7 @@ app.post("/api/ai/register", async (req, res) => {
     if (!result) {
       return res.status(502).json({
         success: false,
-        message: "Python AI service returned an invalid response.",
+        message: "Python AI service returned an invalid response."
       });
     }
 
@@ -308,7 +308,120 @@ app.post("/api/ai/register", async (req, res) => {
 
     return res.status(502).json({
       success: false,
-      message: "Could not reach the Python AI service.",
+      message: "Could not reach the Python AI service."
+    });
+  }
+});
+
+// --------------------------------------------------
+// PERMANENT STUDENT DELETION
+// --------------------------------------------------
+
+app.delete("/api/students/:studentId", async (req, res) => {
+  const studentId = String(req.params.studentId || "").trim().toUpperCase();
+
+  if (!/^[A-Z0-9_-]{1,50}$/.test(studentId)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid student ID."
+    });
+  }
+
+  try {
+    const students = await getStudents();
+
+    const studentExists = students.some(
+      (student) =>
+        String(student.student_id || "").trim().toUpperCase() === studentId
+    );
+
+    const embeddingPath = path.join(
+      AI_SERVICE_DIR,
+      "data",
+      "embeddings",
+      `${studentId}.json`
+    );
+
+    const embeddingExists = fs.existsSync(embeddingPath);
+
+    if (!studentExists && !embeddingExists) {
+      return res.status(404).json({
+        success: false,
+        message: "Student was not found."
+      });
+    }
+
+    // First delete the AI registry entry and face embedding.
+    const aiResponse = await fetch(
+      `${AI_DELETE_URL}/${encodeURIComponent(studentId)}`,
+      {
+        method: "DELETE",
+        signal: AbortSignal.timeout(30000)
+      }
+    );
+
+    const aiResult = await aiResponse.json().catch(() => null);
+
+    if (!aiResponse.ok) {
+      return res.status(aiResponse.status).json({
+        success: false,
+        message:
+          aiResult?.message ||
+          "AI service could not delete the student's face data."
+      });
+    }
+
+    // Remove the student's attendance from every dated attendance file.
+    await fs.promises.mkdir(ATTENDANCE_DIR, { recursive: true });
+
+    const files = await fs.promises.readdir(ATTENDANCE_DIR);
+    let deletedAttendanceRecords = 0;
+
+    for (const filename of files) {
+      if (!/^\d{4}-\d{2}-\d{2}\.json$/.test(filename)) {
+        continue;
+      }
+
+      const filePath = path.join(ATTENDANCE_DIR, filename);
+      const records = await readJsonFile(filePath, []);
+
+      if (!Array.isArray(records)) {
+        throw new Error(`Invalid attendance file: ${filename}`);
+      }
+
+      const filteredRecords = records.filter((record) => {
+        const matches =
+          String(record.studentId || "").trim().toUpperCase() === studentId;
+
+        if (matches) {
+          deletedAttendanceRecords++;
+        }
+
+        return !matches;
+      });
+
+      if (filteredRecords.length !== records.length) {
+        await writeJsonFile(filePath, filteredRecords);
+      }
+    }
+
+    console.log(
+      `Permanently deleted student ${studentId}; removed ${deletedAttendanceRecords} attendance record(s).`
+    );
+
+    return res.json({
+      success: true,
+      studentId,
+      deletedAttendanceRecords,
+      message: "Student face data and attendance history deleted."
+    });
+  } catch (error) {
+    console.error("Permanent student deletion error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Student deletion was incomplete. Check the backend and AI service logs."
     });
   }
 });
@@ -324,13 +437,13 @@ app.get("/api/attendance", async (req, res) => {
     if (!isValidDate(date)) {
       return res.status(400).json({
         success: false,
-        message: "Provide a valid date in YYYY-MM-DD format.",
+        message: "Provide a valid date in YYYY-MM-DD format."
       });
     }
 
     const [students, records] = await Promise.all([
       getStudents(),
-      getAttendanceRecords(date),
+      getAttendanceRecords(date)
     ]);
 
     const presentIds = new Set(
@@ -359,14 +472,14 @@ app.get("/api/attendance", async (req, res) => {
       activePeriod: "Not configured",
       records: records.sort(
         (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-      ),
+      )
     });
   } catch (error) {
     console.error("Get attendance error:", error.message);
 
     return res.status(500).json({
       success: false,
-      message: "Could not load attendance records.",
+      message: "Could not load attendance records."
     });
   }
 });
@@ -382,31 +495,32 @@ app.delete("/api/attendance/history", async (req, res) => {
     if (!isValidDate(date)) {
       return res.status(400).json({
         success: false,
-        message: "Provide a valid date in YYYY-MM-DD format.",
+        message: "Provide a valid date in YYYY-MM-DD format."
       });
     }
 
     const filePath = attendanceFile(date);
 
     await fs.promises.mkdir(ATTENDANCE_DIR, {
-      recursive: true,
+      recursive: true
     });
 
-    // Remove only attendance records, never student registrations.
     await fs.promises.unlink(filePath).catch((error) => {
-      if (error.code !== "ENOENT") throw error;
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
     });
 
     return res.json({
       success: true,
-      message: `Attendance history for ${date} deleted.`,
+      message: `Attendance history for ${date} deleted.`
     });
   } catch (error) {
     console.error("Delete attendance error:", error.message);
 
     return res.status(500).json({
       success: false,
-      message: "Could not delete attendance history.",
+      message: "Could not delete attendance history."
     });
   }
 });
@@ -419,9 +533,10 @@ app.listen(PORT, () => {
   console.log("======================================");
   console.log("SmartClassroom Backend");
   console.log(`Server: http://localhost:${PORT}`);
-  console.log(`AI service: http://127.0.0.1:8000`);
+  console.log("AI service: http://127.0.0.1:8000");
   console.log("Attendance API: /api/attendance");
   console.log("Frame recognition: /api/classroom/frame");
   console.log("Face registration: /api/ai/register");
+  console.log("Student deletion: /api/students/:studentId");
   console.log("======================================");
 });

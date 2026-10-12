@@ -25,10 +25,10 @@ export function AuthProvider({ children }) {
     {
       email: "advisor.it@smartclassroom.com",
       password: "Advisor@123",
-      name: "Class Advisor",
+      name: "III IT - B Advisor",
       role: "CLASS_ADVISOR",
       department: "Information Technology",
-      className: "III IT - A",
+      className: "III IT - B",
     },
   ];
 

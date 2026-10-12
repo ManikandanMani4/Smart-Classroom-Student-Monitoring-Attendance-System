@@ -18,3 +18,5 @@ npm start
 cd /d D:\git\Smart-Classroom-Student-Monitoring-Attendance-System\frontend
 npm install
 npm run dev
+
+

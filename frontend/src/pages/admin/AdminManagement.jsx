@@ -65,7 +65,7 @@ const FIELD_CONFIG = {
     ["code", "Class Code", "text"],
     ["name", "Class Name", "text"],
     ["department", "Department", "text"],
-    ["advisor", "Class Advisor", "text"],
+    ["advisor", "III IT - B Advisor", "text"],
     ["students", "Total Students", "number"],
     ["status", "Status", "select"],
   ],
