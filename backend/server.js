@@ -430,6 +430,104 @@ app.delete("/api/students/:studentId", async (req, res) => {
 // GET ATTENDANCE FOR A DATE
 // --------------------------------------------------
 
+
+/* --------------------------------------------------
+   SAVE OR UPDATE MANUAL ATTENDANCE
+-------------------------------------------------- */
+
+app.post("/api/attendance", async (req, res) => {
+  try {
+    const { studentId, date, status } = req.body || {};
+
+    const normalizedId = String(studentId || "")
+      .trim()
+      .toUpperCase();
+
+    const normalizedStatus = String(status || "")
+      .trim()
+      .toLowerCase();
+
+    if (!normalizedId || !isValidDate(date)) {
+      return res.status(400).json({
+        success: false,
+        message: "Student ID and valid date are required."
+      });
+    }
+
+    if (!["present", "absent"].includes(normalizedStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: "Status must be Present or Absent."
+      });
+    }
+
+    const students = await getStudents();
+
+    const student = students.find(
+      (item) =>
+        String(item.student_id || "")
+          .trim()
+          .toUpperCase() === normalizedId
+    );
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found in the backend registry."
+      });
+    }
+
+    const records = await getAttendanceRecords(date);
+
+    const existingIndex = records.findIndex(
+      (record) =>
+        String(record.studentId || "")
+          .trim()
+          .toUpperCase() === normalizedId
+    );
+
+    const record = {
+      id: `${date}-${normalizedId}`,
+      studentId: normalizedId,
+      studentName: student.student_name || student.name || "",
+      subject: "",
+      period: "",
+      timestamp: new Date().toISOString(),
+      status:
+        normalizedStatus === "present" ? "Present" : "Absent",
+      source: "Manual"
+    };
+
+    if (existingIndex >= 0) {
+      records[existingIndex] = {
+        ...records[existingIndex],
+        ...record
+      };
+    } else {
+      records.push(record);
+    }
+
+    await writeJsonFile(attendanceFile(date), records);
+
+    console.log(
+      `Manual attendance saved: ${normalizedId} - ${record.status} (${date})`
+    );
+
+    return res.json({
+      success: true,
+      message: "Attendance saved successfully.",
+      record
+    });
+  } catch (error) {
+    console.error("Save attendance error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Could not save attendance."
+    });
+  }
+});
+
 app.get("/api/attendance", async (req, res) => {
   try {
     const date = req.query.date;

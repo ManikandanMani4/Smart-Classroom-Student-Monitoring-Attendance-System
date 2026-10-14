@@ -1665,3 +1665,126 @@ textarea {
     font-size: 25px;
   }
 }
+
+/* =========================================
+   HOD SIDEBAR - PURE WHITE THEME
+   No purple, no colored shadows
+   ========================================= */
+
+.hod-sidebar {
+  background: #ffffff !important;
+  color: #374151 !important;
+  border-right: 1px solid #e5e7eb !important;
+  box-shadow: none !important;
+}
+
+/* Brand */
+.hod-sidebar .hod-brand {
+  background: #ffffff !important;
+  border-bottom: 1px solid #eeeeee !important;
+}
+
+.hod-sidebar .hod-brand-icon {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  box-shadow: none !important;
+}
+
+.hod-sidebar .hod-brand-text h2 {
+  color: #111827 !important;
+}
+
+.hod-sidebar .hod-brand-text span {
+  color: #6b7280 !important;
+}
+
+/* Role information */
+.hod-sidebar .hod-role {
+  background: #ffffff !important;
+  border-bottom: 1px solid #eeeeee !important;
+}
+
+.hod-sidebar .hod-role-label {
+  color: #9ca3af !important;
+}
+
+.hod-sidebar .hod-role-name {
+  color: #1f2937 !important;
+}
+
+/* Navigation */
+.hod-sidebar .hod-navigation {
+  background: #ffffff !important;
+}
+
+.hod-sidebar .hod-nav-item,
+.hod-sidebar .hod-nav-item:visited {
+  background: transparent !important;
+  color: #4b5563 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.hod-sidebar .hod-nav-item .hod-nav-icon,
+.hod-sidebar .hod-nav-item .hod-nav-label {
+  color: inherit !important;
+}
+
+.hod-sidebar .hod-nav-item:hover,
+.hod-sidebar .hod-nav-item.active {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Scrollbar */
+.hod-sidebar .hod-navigation::-webkit-scrollbar {
+  width: 5px;
+}
+
+.hod-sidebar .hod-navigation::-webkit-scrollbar-thumb {
+  background: #e5e7eb !important;
+  border-radius: 10px;
+}
+
+/* Profile section */
+.hod-sidebar .hod-sidebar-bottom {
+  background: #ffffff !important;
+  border-top: 1px solid #eeeeee !important;
+}
+
+.hod-sidebar .hod-avatar {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  box-shadow: none !important;
+}
+
+.hod-sidebar .hod-user-info strong {
+  color: #111827 !important;
+}
+
+.hod-sidebar .hod-user-info span {
+  color: #6b7280 !important;
+}
+
+/* Sign out */
+.hod-sidebar .hod-signout {
+  background: #ffffff !important;
+  color: #4b5563 !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: none !important;
+}
+
+.hod-sidebar .hod-signout:hover {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+/* Keep dashboard content styling unchanged */
+.hod-main {
+  background: #f5f7fc;
+}
+
+

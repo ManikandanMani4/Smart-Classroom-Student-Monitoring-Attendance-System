@@ -1,7 +1,9 @@
-
 import { Navigate, Route, Routes } from "react-router-dom";
 import Reports from "../pages/advisor/reports/Reports";
-import Login from "../pages/auth/login/Login";
+import Login from "../pages/auth/Login";
+import Register from "../pages/auth/Register";
+import AdvisorRegister from "../pages/auth/AdvisorRegister";
+import Students from "../pages/hod/students/Students";
 import Attendance from "../pages/advisor/attendance/Attendance";
 import AdminDashboard from "../pages/admin/dashboard/AdminDashboard";
 import AdminManagement from "../pages/admin/AdminManagement";
@@ -15,14 +17,11 @@ import AdvisorDashboard, {
 import Timetable from "../pages/advisor/timetable/Timetable";
 import AdvisorStudents from "../pages/advisor/students/AdvisorStudents";
 import AdvisorClassroom from "../pages/advisor/classroom/AdvisorClassroom";
-
 import ProtectedRoute from "./ProtectedRoute";
-
 /* =========================================================
    GENERIC MODULE PAGE
    Used only for modules that are not implemented yet.
 ========================================================= */
-
 function ModulePage({ title, description }) {
   return (
     <section
@@ -55,18 +54,20 @@ function AppRoutes() {
       <GlobalTheme />
 
       <Routes>
-        {/* Authentication */}
+       
+       <Route path="/login" element={<Login />} />
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+<Route path="/register" element={<Register />} />
 
-        <Route
-          path="/"
-          element={<Navigate to="/login" replace />}
-        />
+<Route
+  path="/advisor-register"
+  element={<AdvisorRegister />}
+/>
 
+<Route
+  path="/"
+  element={<Navigate to="/advisor-register" replace />}
+/>
         {/* ================= ADMIN ================= */}
 
         <Route
@@ -128,30 +129,45 @@ function AppRoutes() {
           }
         />
 
-        {[
-          ["students", "Students", "Manage department students."],
-          ["classes", "Classes", "Manage department classes."],
-          ["advisors", "Class Advisors", "Manage assigned class advisors."],
-          ["attendance", "Attendance", "View department attendance."],
-          ["timetable", "Timetable", "View the department timetable."],
-          ["monitoring", "Monitoring", "Monitor classroom activity."],
-          ["reports", "Reports", "View department reports."],
-        ].map(([path, title, description]) => (
-          <Route
-            key={path}
-            path={`/hod/${path}`}
-            element={
-              <ProtectedRoute allowedRoles={["HOD"]}>
-                <DashboardLayout title={title}>
-                  <ModulePage
-                    title={title}
-                    description={description}
-                  />
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
+{/* HOD Student Management Page */}
+
+<Route
+  path="/hod/students"
+  element={
+    <ProtectedRoute allowedRoles={["HOD"]}>
+      <DashboardLayout title="Students">
+        <Students />
+      </DashboardLayout>
+    </ProtectedRoute>
+  }
+/>
+
+{/* Other HOD modules */}
+
+{[
+  ["classes", "Classes", "Manage department classes."],
+  ["advisors", "Class Advisors", "Manage assigned class advisors."],
+  ["attendance", "Attendance", "View department attendance."],
+  ["timetable", "Timetable", "View the department timetable."],
+  ["monitoring", "Monitoring", "Monitor classroom activity."],
+  ["reports", "Reports", "View department reports."],
+].map(([path, title, description]) => (
+  <Route
+    key={path}
+    path={`/hod/${path}`}
+    element={
+      <ProtectedRoute allowedRoles={["HOD"]}>
+        <DashboardLayout title={title}>
+          <ModulePage
+            title={title}
+            description={description}
           />
-        ))}
+        </DashboardLayout>
+      </ProtectedRoute>
+    }
+  />
+))}
+
 
         {/* ================= CLASS ADVISOR ================= */}
 

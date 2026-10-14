@@ -1,3 +1,12 @@
 [
-  
+  {
+    "student_id": "VSBECIT245092",
+    "student_name": "Manikandan Mani",
+    "embedding_file": "data\\embeddings\\VSBECIT245092.json"
+  },
+  {
+    "student_id": "VSBECIT245091",
+    "student_name": "Manikandan V",
+    "embedding_file": "data\\embeddings\\VSBECIT245091.json"
+  }
 ]
