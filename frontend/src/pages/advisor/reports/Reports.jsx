@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-
-const STUDENTS_KEY = "smartclassroom_students";
-const ATTENDANCE_KEY = "smartclassroom_attendance";
-const CLASS_NAME = "III IT - B";
+import { useAuth } from "../../../context/AuthContext";
 const ATTENDANCE_API = "http://localhost:5000/api/attendance";
-
 const styles = {
   page: {
     boxSizing: "border-box",
@@ -44,7 +40,6 @@ const styles = {
     cursor: "pointer",
   },
 };
-
 function readStorage(key) {
   try {
     const value = JSON.parse(localStorage.getItem(key) || "[]");
@@ -53,16 +48,13 @@ function readStorage(key) {
     return [];
   }
 }
-
 function localDateString(date = new Date()) {
   const offset = date.getTimezoneOffset();
   return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 10);
 }
-
 function todayString() {
   return localDateString(new Date());
 }
-
 function studentId(student) {
   return String(
     student?.studentId ??
@@ -73,7 +65,6 @@ function studentId(student) {
       ""
   ).trim();
 }
-
 function studentName(student) {
   return (
     student?.name ||
@@ -84,19 +75,16 @@ function studentName(student) {
     "Unknown Student"
   );
 }
-
 function recordStudentId(record) {
   return String(
     record?.studentId ?? record?.student_id ?? record?.rollNumber ?? record?.id ?? ""
   ).trim();
 }
-
 function recordStudentName(record) {
   return String(
     record?.studentName ?? record?.student_name ?? record?.name ?? ""
   ).trim();
 }
-
 function recordDate(record) {
   const value =
     record?.date || record?.attendanceDate || record?.timestamp || record?.createdAt;
@@ -105,7 +93,6 @@ function recordDate(record) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? String(value).slice(0, 10) : localDateString(date);
 }
-
 function recordStatus(record) {
   const status = String(record?.status ?? record?.attendanceStatus ?? "")
     .trim()
@@ -115,15 +102,17 @@ function recordStatus(record) {
   if (["leave", "on leave"].includes(status)) return "Leave";
   return "Unknown";
 }
-
 function escapeCsv(value) {
   return `"${String(value ?? "").replace(/"/g, '""')}"`;
 }
-
 export default function Reports() {
-  const [students, setStudents] = useState(() => readStorage(STUDENTS_KEY));
-  const [attendance, setAttendance] = useState(() => readStorage(ATTENDANCE_KEY));
-
+  const { user } = useAuth();
+  const advisorId = user?.uid || user?.id || user?.email || null;
+  const safeAdvisorId = advisorId ? String(advisorId).replace(/[^a-zA-Z0-9_-]/g, "_") : null;
+  const studentsKey = safeAdvisorId ? `smartclassroom_students_${safeAdvisorId}` : null;
+  const attendanceKey = safeAdvisorId ? `smartclassroom_attendance_${safeAdvisorId}` : null;
+  const [students, setStudents] = useState([]);
+  const [attendance, setAttendance] = useState([]);
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 6);
@@ -134,27 +123,29 @@ export default function Reports() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
-
   useEffect(() => {
     let cancelled = false;
-
     async function loadReportData() {
-      setStudents(readStorage(STUDENTS_KEY));
-
+      const currentStudents = readStorage(studentsKey);
+      setStudents(currentStudents);
+      if (!advisorId || !studentsKey || currentStudents.length === 0) {
+        setAttendance([]);
+        setLoadError("");
+        setLoading(false);
+        return;
+      }
+      const ids = new Set(currentStudents.map((student) => studentId(student).toLowerCase()).filter(Boolean));
       if (!startDate || !endDate || startDate > endDate) {
         setAttendance([]);
         setLoadError("Choose a valid date range.");
         return;
       }
-
       setLoading(true);
       setLoadError("");
-
       try {
         const dates = [];
         const cursor = new Date(`${startDate}T12:00:00`);
         const lastDate = new Date(`${endDate}T12:00:00`);
-
         while (cursor <= lastDate) {
           dates.push(
             `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(
@@ -163,37 +154,32 @@ export default function Reports() {
           );
           cursor.setDate(cursor.getDate() + 1);
         }
-
         const responses = await Promise.all(
           dates.map(async (date) => {
             const response = await fetch(
               `${ATTENDANCE_API}?date=${encodeURIComponent(date)}`
             );
             if (!response.ok) throw new Error(`Failed to load attendance for ${date}`);
-
             const data = await response.json();
             if (data.success === false) {
               throw new Error(data.message || `Failed to load ${date}`);
             }
-
-            return (Array.isArray(data.records) ? data.records : []).map((record) => ({
-              ...record,
-              date: data.date || date,
-            }));
+            return (Array.isArray(data.records) ? data.records : [])
+              .filter((record) => ids.has(recordStudentId(record).toLowerCase()))
+              .map((record) => ({ ...record, date: data.date || date }));
           })
         );
-
         if (!cancelled) {
           const records = responses.flat();
           setAttendance(records);
-          localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(records));
+          localStorage.setItem(attendanceKey, JSON.stringify(records));
         }
       } catch (error) {
         console.error("Attendance report loading failed:", error);
         if (!cancelled) {
-          const cached = readStorage(ATTENDANCE_KEY).filter((record) => {
+          const cached = readStorage(attendanceKey).filter((record) => {
             const date = recordDate(record);
-            return date >= startDate && date <= endDate;
+            return date >= startDate && date <= endDate && ids.has(recordStudentId(record).toLowerCase());
           });
           setAttendance(cached);
           setLoadError(
@@ -204,24 +190,20 @@ export default function Reports() {
         if (!cancelled) setLoading(false);
       }
     }
-
     const refresh = () => void loadReportData();
     void loadReportData();
     window.addEventListener("focus", refresh);
     window.addEventListener("storage", refresh);
     window.addEventListener("smartclassroom:dataUpdated", refresh);
-
     return () => {
       cancelled = true;
       window.removeEventListener("focus", refresh);
       window.removeEventListener("storage", refresh);
       window.removeEventListener("smartclassroom:dataUpdated", refresh);
     };
-  }, [startDate, endDate]);
-
+  }, [startDate, endDate, advisorId, studentsKey, attendanceKey]);
   const reportRows = useMemo(() => {
     const studentMap = new Map();
-
     students.forEach((student) => {
       const id = studentId(student);
       const name = studentName(student);
@@ -233,7 +215,6 @@ export default function Reports() {
         });
       }
     });
-
     attendance.forEach((record) => {
       const id = recordStudentId(record);
       const name = recordStudentName(record);
@@ -242,12 +223,10 @@ export default function Reports() {
         studentMap.set(key, { id: id || name, rollNumber: id, name: name || id });
       }
     });
-
     const countedRecords = attendance.filter((record) => {
       const date = recordDate(record);
       return date >= startDate && date <= endDate;
     });
-
     // A date is an attendance day only when the backend returned at least
     // one recognized attendance status for that date. Do not mark everyone
     // absent on dates with no attendance activity at all.
@@ -257,7 +236,6 @@ export default function Reports() {
         .map((record) => recordDate(record))
         .filter(Boolean)
     );
-
     return Array.from(studentMap.values()).map((student) => {
       const keyId = String(student.rollNumber || student.id).trim().toLowerCase();
       const keyName = String(student.name).trim().toLowerCase();
@@ -266,7 +244,6 @@ export default function Reports() {
         const recordName = recordStudentName(record).trim().toLowerCase();
         return (keyId && recordId === keyId) || (recordName && recordName === keyName);
       });
-
       // Keep one status per student per date. If attendance was recorded
       // for a date but this student has no record, count them as Absent.
       const perDay = new Map();
@@ -275,18 +252,15 @@ export default function Reports() {
         const status = recordStatus(record);
         if (date && status !== "Unknown") perDay.set(date, status);
       });
-
       attendanceDays.forEach((date) => {
         if (!perDay.has(date)) perDay.set(date, "Absent");
       });
-
       const values = Array.from(perDay.values());
       const present = values.filter((status) => status === "Present").length;
       const absent = values.filter((status) => status === "Absent").length;
       const leave = values.filter((status) => status === "Leave").length;
       const counted = present + absent;
       const percentage = counted ? Math.round((present / counted) * 100) : null;
-
       return {
         ...student,
         present,
@@ -302,7 +276,6 @@ export default function Reports() {
       };
     });
   }, [students, attendance, startDate, endDate]);
-
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
     return reportRows.filter((row) => {
@@ -314,7 +287,6 @@ export default function Reports() {
       return matchesSearch && matchesStatus;
     });
   }, [reportRows, search, statusFilter]);
-
   const totalPresent = reportRows.reduce((sum, row) => sum + row.present, 0);
   const totalAbsent = reportRows.reduce((sum, row) => sum + row.absent, 0);
   const totalLeave = reportRows.reduce((sum, row) => sum + row.leave, 0);
@@ -325,7 +297,6 @@ export default function Reports() {
   const lowAttendanceCount = reportRows.filter(
     (row) => row.percentage !== null && row.percentage < 75
   ).length;
-
   const selectedDays =
     startDate && endDate && startDate <= endDate
       ? Math.floor(
@@ -333,7 +304,6 @@ export default function Reports() {
             86400000
         ) + 1
       : 0;
-
   const statCards = [
     { title: "Total Students", value: reportRows.length, color: "#2563eb" },
     { title: "Present Entries", value: totalPresent, color: "#16a34a" },
@@ -345,7 +315,6 @@ export default function Reports() {
       color: overallPercentage !== null && overallPercentage < 75 ? "#dc2626" : "#16a34a",
     },
   ];
-
   function exportCsv() {
     const header = [
       "Student",
@@ -384,7 +353,6 @@ export default function Reports() {
     link.remove();
     URL.revokeObjectURL(url);
   }
-
   return (
     <main style={styles.page}>
       <header
@@ -400,14 +368,13 @@ export default function Reports() {
         <div>
           <h1 style={{ margin: 0, fontSize: 28 }}>Attendance Reports</h1>
           <p style={{ color: "#64748b", marginBottom: 0 }}>
-            Student attendance summary for {CLASS_NAME}
+            Student attendance summary for {user?.className || user?.assignedClassId || "your assigned class"}
           </p>
         </div>
         <button style={styles.button} onClick={exportCsv} disabled={loading}>
           Export CSV
         </button>
       </header>
-
       {loadError && (
         <p
           role="alert"
@@ -422,7 +389,6 @@ export default function Reports() {
           {loadError}
         </p>
       )}
-
       <section
         style={{
           ...styles.card,
@@ -466,7 +432,6 @@ export default function Reports() {
           Last 7 Days
         </button>
       </section>
-
       <section
         style={{
           display: "grid",
@@ -482,7 +447,6 @@ export default function Reports() {
           </div>
         ))}
       </section>
-
       <section style={{ ...styles.card, marginBottom: 20 }}>
         <h3 style={{ marginTop: 0 }}>Attendance Overview</h3>
         {loading ? (
@@ -527,7 +491,6 @@ export default function Reports() {
           </>
         )}
       </section>
-
       <section style={styles.card}>
         <h3 style={{ marginTop: 0 }}>Student-wise Report</h3>
         <div
@@ -557,7 +520,6 @@ export default function Reports() {
             <option value="No Data">No attendance data</option>
           </select>
         </div>
-
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 720, fontSize: 14 }}>
             <thead>
@@ -623,7 +585,6 @@ export default function Reports() {
             </tbody>
           </table>
         </div>
-
         <p style={{ color: "#64748b", fontSize: 12, marginBottom: 0 }}>
           Reports use recorded attendance entries for the selected date range. Leave is displayed
           separately and excluded from the present/absent attendance percentage.
