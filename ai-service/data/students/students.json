@@ -1,12 +1,12 @@
 [
   {
-    "student_id": "VSBECIT245091",
-    "student_name": "Manikandan V",
-    "embedding_file": "data\\embeddings\\VSBECIT245091.json"
+    "student_id": "STXAVIER2324BIO-MAT37",
+    "student_name": "Manikandan Veeran",
+    "embedding_file": "data\\embeddings\\STXAVIER2324BIO-MAT37.json"
   },
   {
     "student_id": "VSBECIT245092",
-    "student_name": "Manikandan Mani",
+    "student_name": "Manikandan V",
     "embedding_file": "data\\embeddings\\VSBECIT245092.json"
   }
 ]

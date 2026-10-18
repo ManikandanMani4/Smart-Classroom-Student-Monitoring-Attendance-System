@@ -41,19 +41,8 @@ const seniorYearSlots = [
   { name: "VIII", type: "period" },
 ];
 
-const defaultTimes = {
-  I: ["09:15", "10:00"],
-  II: ["10:00", "10:45"],
-  III: ["11:00", "11:45"],
-  IV: ["11:45", "12:30"],
-  V: ["13:30", "14:05"],
-  VI: ["14:05", "14:50"],
-  VII: ["15:05", "15:50"],
-  VIII: ["15:50", "16:35"],
-  "Break 1": ["10:45", "11:00"],
-  Lunch: ["12:30", "13:30"],
-  "Break 2": ["14:50", "15:05"],
-};
+const storageKey = (year) => `smartClassroomTimetable_${year}`;
+const timeKey = (year) => `smartClassroomAdminTimings_${year}`;
 
 const makeEntry = () => ({
   day: "Monday",
@@ -64,12 +53,6 @@ const makeEntry = () => ({
   staffName: "",
 });
 
-const storageKey = (year) =>
-  `smartClassroomTimetable_${year}`;
-
-const timeKey = (year) =>
-  `smartClassroomTimings_${year}`;
-
 function loadData(key, fallback) {
   try {
     const value = localStorage.getItem(key);
@@ -79,32 +62,45 @@ function loadData(key, fallback) {
   }
 }
 
-function makeDefaultTimings() {
+function makeEmptyTimings() {
+  const names = [
+    ...new Set(
+      [...firstYearSlots, ...seniorYearSlots].map((slot) => slot.name)
+    ),
+  ];
+
   return Object.fromEntries(
-    Object.entries(defaultTimes).map(([name, times]) => [
+    names.map((name) => [name, { start: "", end: "" }])
+  );
+}
+
+function loadTimings(year) {
+  const saved = loadData(timeKey(year), {});
+  const empty = makeEmptyTimings();
+
+  return Object.fromEntries(
+    Object.keys(empty).map((name) => [
       name,
-      { start: times[0], end: times[1] },
+      {
+        start: saved?.[name]?.start || "",
+        end: saved?.[name]?.end || "",
+      },
     ])
   );
 }
 
 export default function Timetable() {
   const [year, setYear] = useState("1st Year");
+
   const [entriesByYear, setEntriesByYear] = useState(() =>
     Object.fromEntries(
-      years.map((item) => [
-        item,
-        loadData(storageKey(item), []),
-      ])
+      years.map((item) => [item, loadData(storageKey(item), [])])
     )
   );
 
   const [timingsByYear, setTimingsByYear] = useState(() =>
     Object.fromEntries(
-      years.map((item) => [
-        item,
-        loadData(timeKey(item), makeDefaultTimings()),
-      ])
+      years.map((item) => [item, loadTimings(item)])
     )
   );
 
@@ -112,13 +108,10 @@ export default function Timetable() {
   const [message, setMessage] = useState("");
 
   const entries = entriesByYear[year] || [];
-  const timings =
-    timingsByYear[year] || makeDefaultTimings();
+  const timings = timingsByYear[year] || makeEmptyTimings();
 
   const slots =
-    year === "1st Year"
-      ? firstYearSlots
-      : seniorYearSlots;
+    year === "1st Year" ? firstYearSlots : seniorYearSlots;
 
   const teachingPeriods = slots.filter(
     (slot) => slot.type === "period"
@@ -138,34 +131,44 @@ export default function Timetable() {
     setMessage("");
   };
 
-  
-const selectPeriod = (periodName) => {
-  const time = timings[periodName];
+  const selectPeriod = (periodName) => {
+    const time = timings[periodName];
 
-  setEntry((previous) => ({
-    ...previous,
-    period: periodName,
-    startTime: time?.start || "",
-    endTime: time?.end || "",
-  }));
-
-  setMessage("");
-};
-
-
-  const updateTiming = (periodName, field, value) => {
-    setTimingsByYear((previous) => ({
+    setEntry((previous) => ({
       ...previous,
-      [year]: {
-        ...previous[year],
-        [periodName]: {
-          ...previous[year][periodName],
-          [field]: value,
-        },
-      },
+      period: periodName,
+      startTime: time?.start || "",
+      endTime: time?.end || "",
     }));
 
     setMessage("");
+  };
+
+  const updateTiming = (periodName, field, value) => {
+    const updated = {
+      ...(timingsByYear[year] || makeEmptyTimings()),
+      [periodName]: {
+        ...(timingsByYear[year]?.[periodName] || {
+          start: "",
+          end: "",
+        }),
+        [field]: value,
+      },
+    };
+
+    try {
+      localStorage.setItem(timeKey(year), JSON.stringify(updated));
+
+      setTimingsByYear((previous) => ({
+        ...previous,
+        [year]: updated,
+      }));
+
+      setMessage("");
+    } catch (error) {
+      console.error("Timing save failed:", error);
+      setMessage("Unable to save timings. Check browser storage.");
+    }
   };
 
   const saveTimings = () => {
@@ -178,27 +181,24 @@ const selectPeriod = (periodName) => {
       }
 
       if (time.start >= time.end) {
-        setMessage(
-          `End time must be after start time for ${slot.name}.`
-        );
+        setMessage(`End time must be after start time for ${slot.name}.`);
         return;
       }
     }
 
     try {
-      localStorage.setItem(
-        timeKey(year),
-        JSON.stringify(timings)
-      );
+      localStorage.setItem(timeKey(year), JSON.stringify(timings));
 
-      setTimingsByYear((previous) => ({
-        ...previous,
-        [year]: { ...timings },
-      }));
+      const saved = loadData(timeKey(year), null);
+
+      if (!saved || JSON.stringify(saved) !== JSON.stringify(timings)) {
+        throw new Error("Could not verify saved timings.");
+      }
 
       setMessage(`${year} timings saved successfully.`);
-    } catch {
-      setMessage("Unable to save timings.");
+    } catch (error) {
+      console.error("Unable to save timings:", error);
+      setMessage("Unable to save timings. Check browser storage.");
     }
   };
 
@@ -211,9 +211,7 @@ const selectPeriod = (periodName) => {
       !entry.startTime ||
       !entry.endTime
     ) {
-      setMessage(
-        "Enter the subject, staff name, start time and end time."
-      );
+      setMessage("Enter the subject, staff name, start time and end time.");
       return;
     }
 
@@ -222,13 +220,11 @@ const selectPeriod = (periodName) => {
       return;
     }
 
-    const duplicate = entries.some(
-      (item) =>
-        item.day === entry.day &&
-        item.period === entry.period
-    );
-
-    if (duplicate) {
+    if (
+      entries.some(
+        (item) => item.day === entry.day && item.period === entry.period
+      )
+    ) {
       setMessage(
         `${entry.day}, Period ${entry.period} already has a subject in ${year}.`
       );
@@ -245,10 +241,7 @@ const selectPeriod = (periodName) => {
     ];
 
     try {
-      localStorage.setItem(
-        storageKey(year),
-        JSON.stringify(updatedEntries)
-      );
+      localStorage.setItem(storageKey(year), JSON.stringify(updatedEntries));
 
       setEntriesByYear((previous) => ({
         ...previous,
@@ -256,22 +249,18 @@ const selectPeriod = (periodName) => {
       }));
 
       setEntry(makeEntry());
-      setMessage("Subject saved. You can enter the next subject.");
-    } catch {
+      setMessage("Subject saved successfully.");
+    } catch (error) {
+      console.error("Unable to save subject:", error);
       setMessage("Unable to save the subject.");
     }
   };
 
   const removeEntry = (index) => {
-    const updatedEntries = entries.filter(
-      (_, i) => i !== index
-    );
+    const updatedEntries = entries.filter((_, i) => i !== index);
 
     try {
-      localStorage.setItem(
-        storageKey(year),
-        JSON.stringify(updatedEntries)
-      );
+      localStorage.setItem(storageKey(year), JSON.stringify(updatedEntries));
 
       setEntriesByYear((previous) => ({
         ...previous,
@@ -279,14 +268,14 @@ const selectPeriod = (periodName) => {
       }));
 
       setMessage("Subject removed from the schedule.");
-    } catch {
+    } catch (error) {
+      console.error("Unable to remove subject:", error);
       setMessage("Unable to remove the subject.");
     }
   };
 
   return (
     <main className="timetable-page">
-      {/* 1. Academic year selector */}
       <section className="year-selector">
         <div>
           <h1>Academic Year</h1>
@@ -306,10 +295,8 @@ const selectPeriod = (periodName) => {
         </select>
       </section>
 
-      {/* 2. Subject entry form */}
       <section className="entry-section">
         <h2>Add Subject Entry — {year}</h2>
-      
 
         <form onSubmit={saveEntry}>
           <div className="entry-grid">
@@ -318,9 +305,7 @@ const selectPeriod = (periodName) => {
               <select
                 id="entry-day"
                 value={entry.day}
-                onChange={(event) =>
-                  updateEntry("day", event.target.value)
-                }
+                onChange={(event) => updateEntry("day", event.target.value)}
               >
                 {days.map((day) => (
                   <option key={day} value={day}>
@@ -335,9 +320,7 @@ const selectPeriod = (periodName) => {
               <select
                 id="entry-period"
                 value={entry.period}
-                onChange={(event) =>
-                  selectPeriod(event.target.value)
-                }
+                onChange={(event) => selectPeriod(event.target.value)}
               >
                 {teachingPeriods.map((slot) => (
                   <option key={slot.name} value={slot.name}>
@@ -411,7 +394,8 @@ const selectPeriod = (periodName) => {
           <p
             className={
               message.includes("saved") ||
-              message.includes("Save")
+              message.includes("Save") ||
+              message.includes("removed")
                 ? "success-message"
                 : "status-message"
             }
@@ -422,12 +406,10 @@ const selectPeriod = (periodName) => {
         )}
       </section>
 
-      {/* 3. Weekly schedule for selected year */}
       <section className="weekly-schedule">
         <div className="weekly-heading">
           <div>
             <h2>{year} — Weekly Schedule</h2>
-            
           </div>
 
           <span className="schedule-count">
@@ -435,7 +417,6 @@ const selectPeriod = (periodName) => {
           </span>
         </div>
 
-        {/* Configure times for this year's timetable */}
         <details className="timing-settings">
           <summary>Configure {year} period and break timings</summary>
 
@@ -444,35 +425,27 @@ const selectPeriod = (periodName) => {
               <div className="timing-card" key={slot.name}>
                 <strong>{slot.name}</strong>
 
-                <label htmlFor={`start-${slot.name}`}>
+                <label htmlFor={`start-${year}-${slot.name}`}>
                   Start
                 </label>
                 <input
-                  id={`start-${slot.name}`}
+                  id={`start-${year}-${slot.name}`}
                   type="time"
                   value={timings[slot.name]?.start || ""}
                   onChange={(event) =>
-                    updateTiming(
-                      slot.name,
-                      "start",
-                      event.target.value
-                    )
+                    updateTiming(slot.name, "start", event.target.value)
                   }
                 />
 
-                <label htmlFor={`end-${slot.name}`}>
+                <label htmlFor={`end-${year}-${slot.name}`}>
                   End
                 </label>
                 <input
-                  id={`end-${slot.name}`}
+                  id={`end-${year}-${slot.name}`}
                   type="time"
                   value={timings[slot.name]?.end || ""}
                   onChange={(event) =>
-                    updateTiming(
-                      slot.name,
-                      "end",
-                      event.target.value
-                    )
+                    updateTiming(slot.name, "end", event.target.value)
                   }
                 />
               </div>
@@ -497,11 +470,7 @@ const selectPeriod = (periodName) => {
                 {slots.map((slot) => (
                   <th
                     key={slot.name}
-                    className={
-                      slot.type !== "period"
-                        ? "special-period"
-                        : ""
-                    }
+                    className={slot.type !== "period" ? "special-period" : ""}
                   >
                     {slot.type === "period"
                       ? `Period ${slot.name}`
@@ -532,11 +501,7 @@ const selectPeriod = (periodName) => {
                     return (
                       <td
                         key={slot.name}
-                        className={
-                          slot.type !== "period"
-                            ? "special-period"
-                            : ""
-                        }
+                        className={slot.type !== "period" ? "special-period" : ""}
                       >
                         {slot.type !== "period" ? (
                           <strong>{slot.name}</strong>
@@ -549,12 +514,7 @@ const selectPeriod = (periodName) => {
                               type="button"
                               className="delete-cell-button"
                               onClick={() =>
-                                removeEntry(
-                                  entries.findIndex(
-                                    (savedEntry) =>
-                                      savedEntry === item
-                                  )
-                                )
+                                removeEntry(entries.indexOf(item))
                               }
                             >
                               Remove

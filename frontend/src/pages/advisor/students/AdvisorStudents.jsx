@@ -457,13 +457,34 @@ export default function AdvisorStudents() {
 
 
 
-    if (students.some((s) => getStudentId(s).toLowerCase() === id.toLowerCase())) {
+    
+const normalizedId = id.trim().toUpperCase();
 
-      setError("This Student ID already exists.");
+// Read the latest saved data as well as the current React state.
+const latestStudents = studentsKey
+  ? readArray(studentsKey)
+  : students;
 
-      return;
+const allStudents = [
+  ...students,
+  ...latestStudents,
+];
 
-    }
+const duplicateStudent = allStudents.some((student) => {
+  const existingId = getStudentId(student)
+    .trim()
+    .toUpperCase();
+
+  return existingId === normalizedId;
+});
+
+if (duplicateStudent) {
+  setError(
+    `Student ID "${normalizedId}" already exists. Please use a different ID.`
+  );
+  return;
+}
+
 
 
 
@@ -915,7 +936,7 @@ const markPresent = async (student) => {
 
               <label>
 
-                Student ID \*
+                Student ID *
 
                 <input
 
@@ -935,7 +956,7 @@ const markPresent = async (student) => {
 
               <label>
 
-                Full name \*
+                Full name *
 
                 <input
 
@@ -955,7 +976,7 @@ const markPresent = async (student) => {
 
               <label>
 
-                Email
+                Email *
 
                 <input
 
@@ -966,6 +987,7 @@ const markPresent = async (student) => {
                   value={form.email}
 
                   onChange={changeForm}
+required
 
                 />
 
@@ -975,7 +997,7 @@ const markPresent = async (student) => {
 
               <label>
 
-                Department
+                Department *
 
                 <input
 
@@ -984,6 +1006,7 @@ const markPresent = async (student) => {
                   value={form.department}
 
                   onChange={changeForm}
+required
 
                 />
 
@@ -993,7 +1016,7 @@ const markPresent = async (student) => {
 
               <label>
 
-                Year
+                Year *
 
                 <select name="year" value={form.year} onChange={changeForm}>
 
@@ -1013,7 +1036,7 @@ const markPresent = async (student) => {
 
               <label>
 
-                Section
+                Section *
 
                 <input
 
