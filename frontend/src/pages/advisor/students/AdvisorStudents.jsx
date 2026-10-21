@@ -147,37 +147,28 @@ export default function AdvisorStudents() {
 
 
 
-  useEffect(() => {
+  
+useEffect(() => {
+  function reload() {
+    if (!studentsKey || !attendanceKey) return;
 
-    function reload() {
+    setStudents(readArray(studentsKey));
+    setAttendance(readArray(attendanceKey));
+  }
 
-      setStudents(readArray(studentsKey));
+  reload();
 
-      setAttendance(readArray(attendanceKey));
+  window.addEventListener("storage", reload);
+  window.addEventListener("focus", reload);
+  window.addEventListener("smartclassroom:dataUpdated", reload);
 
-    }
+  return () => {
+    window.removeEventListener("storage", reload);
+    window.removeEventListener("focus", reload);
+    window.removeEventListener("smartclassroom:dataUpdated", reload);
+  };
+}, [studentsKey, attendanceKey]);
 
-
-
-    window.addEventListener("storage", reload);
-
-    window.addEventListener("focus", reload);
-
-    window.addEventListener("smartclassroom:dataUpdated", reload);
-
-
-
-    return () => {
-
-      window.removeEventListener("storage", reload);
-
-      window.removeEventListener("focus", reload);
-
-      window.removeEventListener("smartclassroom:dataUpdated", reload);
-
-    };
-
-  }, []);
 
 
 

@@ -265,36 +265,37 @@ const attendanceKey = advisorId
   }
 };
 
-  useEffect(() => {
+  
+
+useEffect(() => {
+  function reload() {
+    if (!studentsKey || !attendanceKey) return;
+
+    setStudents(readData(studentsKey));
+    setAttendance(readData(attendanceKey));
+    setTimetable(readData(TIMETABLE_KEY));
+    setAlerts(readData(ALERTS_KEY));
+  }
+
+  loadDashboardData();
+
+  const interval = setInterval(() => {
     loadDashboardData();
+  }, 3000);
 
-    // Refresh periodically.
-    const interval = setInterval(() => {
-      loadDashboardData();
-    }, 3000);
+  window.addEventListener("storage", reload);
+  window.addEventListener("focus", reload);
+  window.addEventListener("smartclassroom:dataUpdated", reload);
 
-    // Refresh after a student is added or another module updates data.
-    const handleUpdate = () => {
-      loadDashboardData();
-    };
+  return () => {
+    clearInterval(interval);
+    window.removeEventListener("storage", reload);
+    window.removeEventListener("focus", reload);
+    window.removeEventListener("smartclassroom:dataUpdated", reload);
+  };
+}, [studentsKey, attendanceKey]);
 
-    window.addEventListener("storage", handleUpdate);
-    window.addEventListener(
-      "smartclassroom:dataUpdated",
-      handleUpdate
-    );
-    window.addEventListener("focus", handleUpdate);
 
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("storage", handleUpdate);
-      window.removeEventListener(
-        "smartclassroom:dataUpdated",
-        handleUpdate
-      );
-      window.removeEventListener("focus", handleUpdate);
-    };
-  }, []);
 
   const assignedClass = user?.className || "III IT - B";
 

@@ -1,12 +1,27 @@
 [
   {
+    "student_id": "VSBECIT245112",
+    "student_name": "Nithish Rajan. P",
+    "embedding_file": "data\\embeddings\\VSBECIT245112.json"
+  },
+  {
+    "student_id": "VSBECIT245064",
+    "student_name": "Jerry Mathew",
+    "embedding_file": "data\\embeddings\\VSBECIT245064.json"
+  },
+  {
     "student_id": "STXAVIER2324BIO-MAT37",
-    "student_name": "Manikandan Veeran",
+    "student_name": "Manikandan V",
     "embedding_file": "data\\embeddings\\STXAVIER2324BIO-MAT37.json"
   },
   {
     "student_id": "VSBECIT245092",
     "student_name": "Manikandan V",
     "embedding_file": "data\\embeddings\\VSBECIT245092.json"
+  },
+  {
+    "student_id": "VSBECIT245091",
+    "student_name": "Manikandan Mani",
+    "embedding_file": "data\\embeddings\\VSBECIT245091.json"
   }
 ]
