@@ -141,7 +141,7 @@ export default function Register() {
         className: getClassName(),
         roomNo,
         assignedClassId: null,
-        approvalStatus: "approved",
+        approvalStatus: "pending",
         createdAt: serverTimestamp(),
       });
 

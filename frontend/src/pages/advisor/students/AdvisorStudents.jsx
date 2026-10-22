@@ -498,24 +498,17 @@ if (duplicateStudent) {
 
 
     const newStudent = {
-
-      id,
-
-      studentId: id,
-
-      name,
-
-      email: form.email.trim(),
-
-      department: form.department.trim(),
-
-      year: form.year,
-
-      section: form.section.trim(),
-
-      className: `${form.year} IT - ${form.section.trim()}`,
-
-    };
+  id,
+  studentId: id,
+  name,
+  email: form.email.trim(),
+  department: form.department.trim(),
+  year: form.year,
+  section: form.section.trim().toUpperCase(),
+  className: user.className,
+  classId: user.assignedClassId,
+  advisorId: user.uid,
+};
 
 
 

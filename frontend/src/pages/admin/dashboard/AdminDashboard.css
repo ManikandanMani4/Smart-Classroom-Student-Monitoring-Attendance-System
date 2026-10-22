@@ -2170,3 +2170,638 @@
     animation: none !important;
   }
 }
+
+/* =========================================================
+   SMARTCLASSROOM ADMIN DASHBOARD — UI ENHANCEMENTS
+   Preserves existing JSX, colors, and functionality
+========================================================= */
+
+/* Main dashboard spacing */
+.admin-content {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Welcome section */
+.welcome-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.welcome-section > div:first-child {
+  min-width: 0;
+}
+
+.welcome-section h2 {
+  letter-spacing: -0.7px;
+  overflow-wrap: anywhere;
+}
+
+.date-card {
+  flex-shrink: 0;
+  border-radius: 14px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.date-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(30, 24, 70, 0.08);
+}
+
+/* Overview statistics grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 34px;
+  align-items: stretch;
+}
+
+/* Individual overview cards */
+.admin-stat-card {
+  position: relative;
+  min-width: 0;
+  min-height: 172px;
+  padding: 22px;
+  overflow: hidden;
+  border: 1px solid #e7e5f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(30, 24, 70, 0.035);
+  transition:
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.admin-stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #5b35d5;
+  opacity: 0.8;
+}
+
+.admin-stat-card:nth-child(2)::before {
+  background: #8b5cf6;
+}
+
+.admin-stat-card:nth-child(3)::before {
+  background: #16a34a;
+}
+
+.admin-stat-card:nth-child(4)::before {
+  background: #f59e0b;
+}
+
+.admin-stat-card:hover {
+  transform: translateY(-4px);
+  border-color: #d8d0f5;
+  box-shadow: 0 12px 28px rgba(30, 24, 70, 0.09);
+}
+
+.stat-top {
+  margin-bottom: 17px;
+}
+
+.stat-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  font-size: 19px;
+}
+
+.stat-title {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #667085;
+}
+
+.stat-value {
+  margin-bottom: 7px;
+  font-size: clamp(27px, 2.3vw, 34px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.8px;
+  color: #17152a;
+  overflow-wrap: anywhere;
+}
+
+.stat-change {
+  display: block;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #8b90a0;
+}
+
+/* Section spacing and headings */
+.section-block {
+  margin-bottom: 30px;
+}
+
+.section-heading {
+  margin-bottom: 17px;
+}
+
+.section-heading h3 {
+  letter-spacing: -0.4px;
+}
+
+/* Quick actions */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.quick-action {
+  min-width: 0;
+  min-height: 88px;
+  padding: 17px;
+  border: 1px solid #e7e5f0;
+  border-radius: 14px;
+  background: #ffffff;
+  text-align: left;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.quick-action:hover {
+  transform: translateY(-3px);
+  border-color: #d8d0f5;
+  box-shadow: 0 8px 22px rgba(30, 24, 70, 0.07);
+}
+
+.quick-action > div:nth-child(2) {
+  min-width: 0;
+}
+
+.quick-action strong,
+.quick-action span {
+  overflow-wrap: anywhere;
+}
+
+.quick-action-icon {
+  flex-shrink: 0;
+  border-radius: 11px;
+}
+
+/* Dashboard information panels */
+.dashboard-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.panel-card {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 3px 12px rgba(30, 24, 70, 0.035);
+}
+
+.panel-card-header {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.department-row {
+  min-width: 0;
+  gap: 12px;
+}
+
+.department-info {
+  min-width: 0;
+}
+
+.department-info strong,
+.department-info span {
+  overflow-wrap: anywhere;
+}
+
+/* Tablet layouts */
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Smaller tablets and phones */
+@media (max-width: 750px) {
+  .welcome-section {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .date-card {
+    align-self: flex-start;
+    text-align: left;
+  }
+
+  .stats-grid {
+    gap: 12px;
+    margin-bottom: 26px;
+  }
+
+  .admin-stat-card {
+    min-height: 155px;
+    padding: 17px;
+    border-radius: 14px;
+  }
+
+  .stat-top {
+    margin-bottom: 13px;
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .quick-actions {
+    gap: 11px;
+  }
+
+  .quick-action {
+    padding: 13px;
+  }
+
+  .dashboard-columns {
+    gap: 15px;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 420px) {
+  .stats-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quick-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-stat-card {
+    min-height: 140px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+  }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .admin-stat-card,
+  .quick-action,
+  .date-card {
+    transition: none;
+  }
+
+  .admin-stat-card:hover,
+  .quick-action:hover,
+  .date-card:hover {
+    transform: none;
+  }
+}
+/* =========================================================
+   SMARTCLASSROOM ADMIN DASHBOARD — UI ENHANCEMENTS
+   Preserves existing JSX, colors, and functionality
+========================================================= */
+
+/* Main dashboard spacing */
+.admin-content {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Welcome section */
+.welcome-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.welcome-section > div:first-child {
+  min-width: 0;
+}
+
+.welcome-section h2 {
+  letter-spacing: -0.7px;
+  overflow-wrap: anywhere;
+}
+
+.date-card {
+  flex-shrink: 0;
+  border-radius: 14px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.date-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(30, 24, 70, 0.08);
+}
+
+/* Overview statistics grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 34px;
+  align-items: stretch;
+}
+
+/* Individual overview cards */
+.admin-stat-card {
+  position: relative;
+  min-width: 0;
+  min-height: 172px;
+  padding: 22px;
+  overflow: hidden;
+  border: 1px solid #e7e5f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(30, 24, 70, 0.035);
+  transition:
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.admin-stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #5b35d5;
+  opacity: 0.8;
+}
+
+.admin-stat-card:nth-child(2)::before {
+  background: #8b5cf6;
+}
+
+.admin-stat-card:nth-child(3)::before {
+  background: #16a34a;
+}
+
+.admin-stat-card:nth-child(4)::before {
+  background: #f59e0b;
+}
+
+.admin-stat-card:hover {
+  transform: translateY(-4px);
+  border-color: #d8d0f5;
+  box-shadow: 0 12px 28px rgba(30, 24, 70, 0.09);
+}
+
+.stat-top {
+  margin-bottom: 17px;
+}
+
+.stat-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  font-size: 19px;
+}
+
+.stat-title {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #667085;
+}
+
+.stat-value {
+  margin-bottom: 7px;
+  font-size: clamp(27px, 2.3vw, 34px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.8px;
+  color: #17152a;
+  overflow-wrap: anywhere;
+}
+
+.stat-change {
+  display: block;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #8b90a0;
+}
+
+/* Section spacing and headings */
+.section-block {
+  margin-bottom: 30px;
+}
+
+.section-heading {
+  margin-bottom: 17px;
+}
+
+.section-heading h3 {
+  letter-spacing: -0.4px;
+}
+
+/* Quick actions */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.quick-action {
+  min-width: 0;
+  min-height: 88px;
+  padding: 17px;
+  border: 1px solid #e7e5f0;
+  border-radius: 14px;
+  background: #ffffff;
+  text-align: left;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.quick-action:hover {
+  transform: translateY(-3px);
+  border-color: #d8d0f5;
+  box-shadow: 0 8px 22px rgba(30, 24, 70, 0.07);
+}
+
+.quick-action > div:nth-child(2) {
+  min-width: 0;
+}
+
+.quick-action strong,
+.quick-action span {
+  overflow-wrap: anywhere;
+}
+
+.quick-action-icon {
+  flex-shrink: 0;
+  border-radius: 11px;
+}
+
+/* Dashboard information panels */
+.dashboard-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.panel-card {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 3px 12px rgba(30, 24, 70, 0.035);
+}
+
+.panel-card-header {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.department-row {
+  min-width: 0;
+  gap: 12px;
+}
+
+.department-info {
+  min-width: 0;
+}
+
+.department-info strong,
+.department-info span {
+  overflow-wrap: anywhere;
+}
+
+/* Tablet layouts */
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Smaller tablets and phones */
+@media (max-width: 750px) {
+  .welcome-section {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .date-card {
+    align-self: flex-start;
+    text-align: left;
+  }
+
+  .stats-grid {
+    gap: 12px;
+    margin-bottom: 26px;
+  }
+
+  .admin-stat-card {
+    min-height: 155px;
+    padding: 17px;
+    border-radius: 14px;
+  }
+
+  .stat-top {
+    margin-bottom: 13px;
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .quick-actions {
+    gap: 11px;
+  }
+
+  .quick-action {
+    padding: 13px;
+  }
+
+  .dashboard-columns {
+    gap: 15px;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 420px) {
+  .stats-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quick-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-stat-card {
+    min-height: 140px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+  }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .admin-stat-card,
+  .quick-action,
+  .date-card {
+    transition: none;
+  }
+
+  .admin-stat-card:hover,
+  .quick-action:hover,
+  .date-card:hover {
+    transform: none;
+  }
+}

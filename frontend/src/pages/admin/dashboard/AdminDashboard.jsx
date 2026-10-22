@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import AdminManagement from "../AdminManagement";
+import AdminManagement from "./AdminManagement";
 import { useAuth } from "../../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import "./AdminDashboard.css";
@@ -508,39 +508,97 @@ function AdminDashboard() {
   */
 
   if (activeMenu !== "Dashboard") {
-    const moduleMap = {
-      Faculty: "Staff",
-      "HOD Management": "Staff",
-      Departments: "Departments",
-      Staff: "Staff",
-      Students: "Students",
-      Classes: "Classes",
-      Subjects: "Subjects",
-      Timetable: "Classes",
-      Attendance: "Students",
-    };
+  const moduleMap = {
+    Departments: "Departments",
+    Staff: "Staff",
+    Faculty: "Staff",
+    "HOD Management": "Staff",
+    Students: "Students",
+    Classes: "Classes",
+    Subjects: "Subjects",
+  };
 
-    const selectedModule =
-      moduleMap[activeMenu];
+  const selectedModule = moduleMap[activeMenu];
 
-    if (selectedModule) {
-      return (
-        <div className="admin-dashboard">
-
-          <AdminManagement
-            module={selectedModule}
-            onBack={() =>
-              setActiveMenu(
-                "Dashboard"
-              )
-            }
-          />
-
-        </div>
-      );
-    }
+  if (selectedModule) {
+    return (
+      <div className="admin-dashboard">
+        <AdminManagement
+          module={selectedModule}
+          onBack={() => setActiveMenu("Dashboard")}
+        />
+      </div>
+    );
   }
 
+  // Avoid displaying an unrelated management page
+  // for modules that are not implemented yet.
+  return (
+    <div className="admin-dashboard">
+      <aside className="admin-sidebar">
+        <div className="admin-brand">
+          <div className="admin-brand-icon">SC</div>
+          <div>
+            <h2>SmartClassroom</h2>
+            <span>ADMIN PORTAL</span>
+          </div>
+        </div>
+
+        <div className="sidebar-scroll">
+          {menuGroups.map((group) => (
+            <div className="sidebar-group" key={group.title}>
+              <div className="sidebar-title">{group.title}</div>
+
+              {group.items.map((item) => (
+                <button
+                  key={item.name}
+                  className={`sidebar-item ${
+                    activeMenu === item.name ? "active" : ""
+                  }`}
+                  onClick={() => handleMenuClick(item.name)}
+                >
+                  <span className="sidebar-icon">{item.icon}</span>
+                  <span>{item.name}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <div className="sidebar-bottom">
+          <div className="sidebar-user">
+            <div className="sidebar-avatar">
+              {user?.name?.charAt(0)?.toUpperCase() || "A"}
+            </div>
+            <div className="sidebar-user-info">
+              <strong>{user?.name || "Administrator"}</strong>
+              <span>College Administrator</span>
+            </div>
+          </div>
+
+          <button className="logout-button" onClick={handleLogout}>
+            <span>↪</span>
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      <main className="admin-main">
+        <div className="admin-content">
+          <section className="welcome-section">
+            <div>
+              <p className="welcome-label">ADMINISTRATION</p>
+              <h2>{activeMenu}</h2>
+              <p>
+                This page has not been connected to its module yet.
+              </p>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  );
+}
 
   /*
    =========================================================

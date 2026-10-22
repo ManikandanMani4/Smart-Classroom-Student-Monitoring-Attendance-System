@@ -26,3 +26,5 @@ backend/uploads/
 
 #firebase
 frontend/src/firebase.js
+
+backend/serviceAccountKey.json

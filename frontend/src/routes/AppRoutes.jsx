@@ -1,27 +1,34 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import Reports from "../pages/advisor/reports/Reports";
+
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 import AdvisorRegister from "../pages/auth/AdvisorRegister";
+
 import Students from "../pages/hod/students/Students";
 import Attendance from "../pages/advisor/attendance/Attendance";
+
 import AdminDashboard from "../pages/admin/dashboard/AdminDashboard";
-import AdminManagement from "../pages/admin/AdminManagement";
 import Alerts from "../pages/advisor/alerts/Alerts";
+
 import HodDashboard from "../pages/hod/dashboard/HodDashboard";
 import DashboardLayout from "../layouts/DashboardLayout";
 import GlobalTheme from "../components/GlobalTheme";
+
 import AdvisorDashboard, {
   AdvisorLayout,
 } from "../pages/advisor/dashboard/AdvisorDashboard";
+
 import Timetable from "../pages/advisor/timetable/Timetable";
 import AdvisorStudents from "../pages/advisor/students/AdvisorStudents";
 import AdvisorClassroom from "../pages/advisor/classroom/AdvisorClassroom";
+import Reports from "../pages/advisor/reports/Reports";
+
 import ProtectedRoute from "./ProtectedRoute";
+
 /* =========================================================
    GENERIC MODULE PAGE
-   Used only for modules that are not implemented yet.
 ========================================================= */
+
 function ModulePage({ title, description }) {
   return (
     <section
@@ -45,7 +52,7 @@ function ModulePage({ title, description }) {
 }
 
 /* =========================================================
-   ROUTES
+   APP ROUTES
 ========================================================= */
 
 function AppRoutes() {
@@ -54,69 +61,33 @@ function AppRoutes() {
       <GlobalTheme />
 
       <Routes>
-       
-       <Route path="/login" element={<Login />} />
+        {/* ================= AUTHENTICATION ================= */}
 
-<Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
 
-<Route
-  path="/advisor-register"
-  element={<AdvisorRegister />}
-/>
-
-<Route
-  path="/"
-  element={<Navigate to="/advisor-register" replace />}
-/>
-        {/* ================= ADMIN ================= */}
+        <Route path="/register" element={<Register />} />
 
         <Route
-          path="/admin/dashboard"
+          path="/advisor-register"
+          element={<AdvisorRegister />}
+        />
+
+        <Route
+          path="/"
+          element={<Navigate to="/advisor-register" replace />}
+        />
+
+        {/* ================= ADMIN ================= */}
+
+        {/* Keep all Admin pages inside AdminDashboard */}
+        <Route
+          path="/admin/*"
           element={
             <ProtectedRoute allowedRoles={["COLLEGE_ADMIN"]}>
               <AdminDashboard />
             </ProtectedRoute>
           }
         />
-
-        {[
-          ["departments", "Departments"],
-          ["staff", "Staff"],
-          ["students", "Students"],
-          ["classes", "Classes"],
-          ["subjects", "Subjects"],
-          ["hod", "Staff"],
-        ].map(([path, module]) => (
-          <Route
-            key={path}
-            path={`/admin/${path}`}
-            element={
-              <ProtectedRoute allowedRoles={["COLLEGE_ADMIN"]}>
-                <AdminManagement module={module} />
-              </ProtectedRoute>
-            }
-          />
-        ))}
-
-        {[
-          ["timetable", "Timetable", "Manage college timetables."],
-          ["attendance", "Attendance", "Monitor college attendance."],
-          ["monitoring", "Monitoring", "Monitor classroom activity."],
-          ["reports", "Reports", "View college reports."],
-        ].map(([path, title, description]) => (
-          <Route
-            key={path}
-            path={`/admin/${path}`}
-            element={
-              <ProtectedRoute allowedRoles={["COLLEGE_ADMIN"]}>
-                <ModulePage
-                  title={title}
-                  description={description}
-                />
-              </ProtectedRoute>
-            }
-          />
-        ))}
 
         {/* ================= HOD ================= */}
 
@@ -129,45 +100,42 @@ function AppRoutes() {
           }
         />
 
-{/* HOD Student Management Page */}
+        {/* HOD Students */}
+        <Route
+          path="/hod/students"
+          element={
+            <ProtectedRoute allowedRoles={["HOD"]}>
+              <DashboardLayout title="Students">
+                <Students />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
 
-<Route
-  path="/hod/students"
-  element={
-    <ProtectedRoute allowedRoles={["HOD"]}>
-      <DashboardLayout title="Students">
-        <Students />
-      </DashboardLayout>
-    </ProtectedRoute>
-  }
-/>
-
-{/* Other HOD modules */}
-
-{[
-  ["classes", "Classes", "Manage department classes."],
-  ["advisors", "Class Advisors", "Manage assigned class advisors."],
-  ["attendance", "Attendance", "View department attendance."],
-  ["timetable", "Timetable", "View the department timetable."],
-  ["monitoring", "Monitoring", "Monitor classroom activity."],
-  ["reports", "Reports", "View department reports."],
-].map(([path, title, description]) => (
-  <Route
-    key={path}
-    path={`/hod/${path}`}
-    element={
-      <ProtectedRoute allowedRoles={["HOD"]}>
-        <DashboardLayout title={title}>
-          <ModulePage
-            title={title}
-            description={description}
+        {/* Other HOD modules */}
+        {[
+          ["classes", "Classes", "Manage department classes."],
+          ["advisors", "Class Advisors", "Manage assigned class advisors."],
+          ["attendance", "Attendance", "View department attendance."],
+          ["timetable", "Timetable", "View the department timetable."],
+          ["monitoring", "Monitoring", "Monitor classroom activity."],
+          ["reports", "Reports", "View department reports."],
+        ].map(([path, title, description]) => (
+          <Route
+            key={path}
+            path={`/hod/${path}`}
+            element={
+              <ProtectedRoute allowedRoles={["HOD"]}>
+                <DashboardLayout title={title}>
+                  <ModulePage
+                    title={title}
+                    description={description}
+                  />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
           />
-        </DashboardLayout>
-      </ProtectedRoute>
-    }
-  />
-))}
-
+        ))}
 
         {/* ================= CLASS ADVISOR ================= */}
 
@@ -180,8 +148,7 @@ function AppRoutes() {
           }
         />
 
-        {/* Actual student management page */}
-
+        {/* Advisor Students */}
         <Route
           path="/advisor/students"
           element={
@@ -196,8 +163,7 @@ function AppRoutes() {
           }
         />
 
-        {/* Actual camera classroom page */}
-
+        {/* Advisor Classroom */}
         <Route
           path="/advisor/classroom"
           element={
@@ -212,72 +178,65 @@ function AppRoutes() {
           }
         />
 
-{/* Actual attendance page */}
+        {/* Advisor Attendance */}
+        <Route
+          path="/advisor/attendance"
+          element={
+            <ProtectedRoute allowedRoles={["CLASS_ADVISOR"]}>
+              <AdvisorLayout
+                title="Attendance"
+                description="Monitor automatically recorded classroom attendance."
+              >
+                <Attendance />
+              </AdvisorLayout>
+            </ProtectedRoute>
+          }
+        />
 
-<Route
-  path="/advisor/attendance"
-  element={
-    <ProtectedRoute allowedRoles={["CLASS_ADVISOR"]}>
-      <AdvisorLayout
-        title="Attendance"
-        description="Monitor automatically recorded classroom attendance."
-      >
-        <Attendance />
-      </AdvisorLayout>
-    </ProtectedRoute>
-  }
-/>
+        {/* Advisor Timetable */}
+        <Route
+          path="/advisor/timetable"
+          element={
+            <ProtectedRoute allowedRoles={["CLASS_ADVISOR"]}>
+              <AdvisorLayout
+                title="Timetable"
+                description="Upload, extract, review, and manage your class timetable."
+              >
+                <Timetable />
+              </AdvisorLayout>
+            </ProtectedRoute>
+          }
+        />
 
-{/* Other advisor modules */}
+        {/* Advisor Alerts */}
+        <Route
+          path="/advisor/alerts"
+          element={
+            <ProtectedRoute allowedRoles={["CLASS_ADVISOR"]}>
+              <AdvisorLayout
+                title="Alerts"
+                description="View classroom and attendance alerts."
+              >
+                <Alerts />
+              </AdvisorLayout>
+            </ProtectedRoute>
+          }
+        />
 
-
-{/* Actual timetable upload and management page */}
-
-<Route
-  path="/advisor/timetable"
-  element={
-    <ProtectedRoute allowedRoles={["CLASS_ADVISOR"]}>
-      <AdvisorLayout
-        title="Timetable"
-        description="Upload, extract, review, and manage your class timetable."
-      >
-        <Timetable />
-      </AdvisorLayout>
-    </ProtectedRoute>
-  }
-/>
-
-<Route
-  path="/advisor/alerts"
-  element={
-    <ProtectedRoute allowedRoles={["CLASS_ADVISOR"]}>
-      <AdvisorLayout
-        title="Alerts"
-        description="View classroom and attendance alerts."
-      >
-        <Alerts />
-      </AdvisorLayout>
-    </ProtectedRoute>
-  }
-/>
-
-
-<Route
-  path="/advisor/reports"
-  element={
-    <ProtectedRoute allowedRoles={["CLASS_ADVISOR"]}>
-      <AdvisorLayout
-        title="Reports"
-        description="View attendance and classroom reports."
-      >
-        <Reports />
-      </AdvisorLayout>
-    </ProtectedRoute>
-  }
-/>
-
-
-          
+        {/* Advisor Reports */}
+        <Route
+          path="/advisor/reports"
+          element={
+            <ProtectedRoute allowedRoles={["CLASS_ADVISOR"]}>
+              <AdvisorLayout
+                title="Reports"
+                description="View attendance and classroom reports."
+              >
+                <Reports />
+              </AdvisorLayout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* ================= UNAUTHORIZED ================= */}
 
@@ -295,7 +254,9 @@ function AppRoutes() {
             >
               <div>
                 <h1>Unauthorized</h1>
-                <p>You do not have permission to access this page.</p>
+                <p>
+                  You do not have permission to access this page.
+                </p>
               </div>
             </div>
           }
