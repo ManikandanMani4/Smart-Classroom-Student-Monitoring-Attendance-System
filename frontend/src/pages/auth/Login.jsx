@@ -29,32 +29,45 @@ const navigate = useNavigate();
   };
 
   
+
 const handleLogin = async (event) => {
   event.preventDefault();
   setMessage("");
 
-  const result = await login(
-    form.email,
-    form.password,
-    role
-  );
+  try {
+    const loggedInUser = await login(
+      form.email,
+      form.password,
+      role
+    );
 
-  if (!result.success) {
-    setMessage(result.message);
-    return;
+    const routes = {
+      COLLEGE_ADMIN: "/admin/dashboard",
+      HOD: "/hod/dashboard",
+      CLASS_ADVISOR: "/advisor/dashboard",
+    };
+
+    const destination = routes[loggedInUser.role];
+
+    if (!destination) {
+      throw new Error("No dashboard is configured for this role.");
+    }
+
+    navigate(destination, { replace: true });
+  } catch (error) {
+    console.error("Login failed:", error);
+
+    setMessage(
+      error.code === "auth/invalid-credential"
+        ? "Invalid email or password."
+        : error.code === "auth/too-many-requests"
+        ? "Too many attempts. Please try again later."
+        : error.message || "Unable to sign in. Please try again."
+    );
   }
-
-  const routes = {
-    COLLEGE_ADMIN: "/admin/dashboard",
-    HOD: "/hod/dashboard",
-    CLASS_ADVISOR: "/advisor/dashboard",
-  };
-
-  navigate(routes[result.user.role] || "/login", {
-    replace: true,
-  });
 };
 
+  
  
  
 

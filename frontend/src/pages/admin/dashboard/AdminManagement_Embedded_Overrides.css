@@ -1,0 +1,16 @@
+/* Embedded management content: the AdminDashboard owns the persistent sidebar. */
+.admin-management-embedded {
+  width: 100%;
+  min-width: 0;
+}
+.admin-management-embedded .admin-management-main {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+.admin-management-embedded .management-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}

@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import {
   createUserWithEmailAndPassword,
   updateProfile,
   deleteUser,
+  signOut,
 } from "firebase/auth";
 import {
   doc,
@@ -21,6 +23,7 @@ export default function AdvisorRegister() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
   async function handleRegister(event) {
     event.preventDefault();
@@ -46,6 +49,7 @@ export default function AdvisorRegister() {
 
     setLoading(true);
     let newUser = null;
+    let profileSaved = false;
 
     try {
       const credential = await createUserWithEmailAndPassword(
@@ -67,15 +71,29 @@ export default function AdvisorRegister() {
         role: "CLASS_ADVISOR",
         approvalStatus: "pending",
         assignedClassId: null,
+        department: "",
+        className: "",
         createdAt: serverTimestamp(),
       });
 
-      navigate("/advisor/dashboard", { replace: true });
+      profileSaved = true;
+
+      // Registration should not grant access to the advisor dashboard.
+      setSubmitted(true);
+
+      // End the new Firebase session before sending the user to login.
+      await signOut(auth);
+
+      navigate("/login", {
+        replace: true,
+        state: { registrationSubmitted: true },
+      });
     } catch (err) {
       console.error("Advisor registration failed:", err);
 
-      // Remove the newly created account if profile setup fails.
-      if (newUser) {
+      // Only remove the new account if its Firestore profile
+      // was not saved successfully.
+      if (newUser && !profileSaved) {
         try {
           await deleteUser(newUser);
         } catch (deleteError) {
@@ -96,13 +114,50 @@ export default function AdvisorRegister() {
           "Firestore denied registration. Check your security rules.",
       };
 
-      setError(
-        messages[err.code] ||
-          "Registration failed. Please check your connection and Firebase configuration."
-      );
+      if (profileSaved) {
+        setSubmitted(true);
+        setError(
+          "Your request was saved, but sign-out or redirection failed. " +
+          "Your account is awaiting Admin approval. Please return to login."
+        );
+      } else {
+        setError(
+          messages[err.code] ||
+            "Registration failed. Check your connection and Firebase configuration."
+        );
+      }
     } finally {
       setLoading(false);
     }
+  }
+
+  if (submitted) {
+    return (
+      <main className="advisor-register-page">
+        <section className="advisor-register-card">
+          <h1>Registration Submitted</h1>
+          <p>
+            Your Class Advisor account has been created and is
+            awaiting College Admin approval.
+          </p>
+          <p>
+            You can sign in after the Admin approves your request
+            and assigns you a class.
+          </p>
+          {error && (
+            <div role="alert" className="advisor-register-error">
+              {error}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => navigate("/login", { replace: true })}
+          >
+            Go to Login
+          </button>
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -172,7 +227,7 @@ export default function AdvisorRegister() {
               setConfirmPassword(event.target.value)
             }
             autoComplete="new-password"
-            minLength={6}
+            minLength={8}
             required
           />
 
@@ -182,8 +237,7 @@ export default function AdvisorRegister() {
         </form>
 
         <p>
-          Already registered?{" "}
-          <Link to="/login">Sign in</Link>
+          Already registered? <Link to="/login">Sign in</Link>
         </p>
       </section>
     </main>

@@ -11,6 +11,7 @@ import {
 } from "react-router-dom";
 
 import "./AdminManagement.css";
+import "./AdminManagement_Embedded_Overrides.css";
 
 
 /* =========================================================
@@ -145,6 +146,7 @@ const ADMIN_MENU = [
 function AdminManagement({
   module = "Staff",
   onBack,
+  embedded = false,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -764,114 +766,32 @@ function AdminManagement({
   ========================================================= */
 
   return (
-    <div className="admin-management-layout">
+    <div className={embedded ? "admin-management-embedded" : "admin-management-layout"}>
 
       {/* =====================================================
           ADMIN SIDEBAR
           SIDEBAR IS INSIDE THIS FILE
       ===================================================== */}
 
-      <aside className="admin-management-sidebar">
+      {!embedded && (
+        <aside className="admin-management-sidebar">
 
-        {/* BRAND */}
+          {/* BRAND */}
 
-        <div className="admin-management-brand">
+          <div className="admin-management-brand">
 
-          <div className="admin-management-brand-icon">
-            SC
-          </div>
-
-          <div className="admin-management-brand-text">
-
-            <h2>
-              SmartClassroom
-            </h2>
-
-            <span>
-              SMART CAMPUS
-            </span>
-
-          </div>
-
-        </div>
-
-
-        {/* ROLE */}
-
-        <div className="admin-management-role">
-
-          <div className="admin-management-role-label">
-            ROLE
-          </div>
-
-          <div className="admin-management-role-name">
-            COLLEGE ADMIN
-          </div>
-
-        </div>
-
-
-        {/* NAVIGATION */}
-
-        <nav className="admin-management-navigation">
-
-          {ADMIN_MENU.map(
-            (item) => {
-
-              const isActive =
-                location.pathname ===
-                item.path;
-
-              return (
-                <button
-                  key={item.path}
-                  type="button"
-                  className={`admin-management-nav-item ${
-                    isActive
-                      ? "active"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    handleAdminNavigation(
-                      item.path
-                    )
-                  }
-                >
-
-                  <span className="admin-management-nav-icon">
-                    {item.icon}
-                  </span>
-
-                  <span>
-                    {item.label}
-                  </span>
-
-                </button>
-              );
-            }
-          )}
-
-        </nav>
-
-
-        {/* USER */}
-
-        <div className="admin-management-sidebar-bottom">
-
-          <div className="admin-management-user">
-
-            <div className="admin-management-avatar">
-              A
+            <div className="admin-management-brand-icon">
+              SC
             </div>
 
-            <div className="admin-management-user-info">
+            <div className="admin-management-brand-text">
 
-              <strong>
-                College Administrator
-              </strong>
+              <h2>
+                SmartClassroom
+              </h2>
 
               <span>
-                College Admin
+                SMART CAMPUS
               </span>
 
             </div>
@@ -879,35 +799,119 @@ function AdminManagement({
           </div>
 
 
-          <button
-            type="button"
-            className="admin-management-signout"
-            onClick={() => {
-              closeForm();
-              navigate("/login");
-            }}
-          >
+          {/* ROLE */}
 
-            <span>
-              ↪
-            </span>
+          <div className="admin-management-role">
 
-            <span>
-              Sign out
-            </span>
+            <div className="admin-management-role-label">
+              ROLE
+            </div>
 
-          </button>
+            <div className="admin-management-role-name">
+              COLLEGE ADMIN
+            </div>
 
-        </div>
+          </div>
 
-      </aside>
+
+          {/* NAVIGATION */}
+
+          <nav className="admin-management-navigation">
+
+            {ADMIN_MENU.map(
+              (item) => {
+
+                const isActive =
+                  location.pathname ===
+                  item.path;
+
+                return (
+                  <button
+                    key={item.path}
+                    type="button"
+                    className={`admin-management-nav-item ${
+                      isActive
+                        ? "active"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      handleAdminNavigation(
+                        item.path
+                      )
+                    }
+                  >
+
+                    <span className="admin-management-nav-icon">
+                      {item.icon}
+                    </span>
+
+                    <span>
+                      {item.label}
+                    </span>
+
+                  </button>
+                );
+              }
+            )}
+
+          </nav>
+
+
+          {/* USER */}
+
+          <div className="admin-management-sidebar-bottom">
+
+            <div className="admin-management-user">
+
+              <div className="admin-management-avatar">
+                A
+              </div>
+
+              <div className="admin-management-user-info">
+
+                <strong>
+                  College Administrator
+                </strong>
+
+                <span>
+                  College Admin
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <button
+              type="button"
+              className="admin-management-signout"
+              onClick={() => {
+                closeForm();
+                navigate("/login");
+              }}
+            >
+
+              <span>
+                ↪
+              </span>
+
+              <span>
+                Sign out
+              </span>
+
+            </button>
+
+          </div>
+
+        </aside>
+      )}
 
 
       {/* =====================================================
           MAIN CONTENT
       ===================================================== */}
 
-      <main className="admin-management-main">
+      <main className={`admin-management-main${embedded ? " embedded" : ""}`}>
 
         <div className="management-page">
 
@@ -920,6 +924,7 @@ function AdminManagement({
 
             <div className="management-header-left">
 
+{!embedded && (
               <button
                 type="button"
                 className="management-back"
@@ -937,6 +942,7 @@ function AdminManagement({
                 </span>
 
               </button>
+              )}
 
 
               <div className="management-heading">

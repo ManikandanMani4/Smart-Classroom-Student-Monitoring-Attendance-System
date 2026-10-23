@@ -1,131 +1,61 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
+  useEffect,
   useState,
 } from "react";
 
 import {
+  onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
 
-import {
-  doc,
-  getDoc,
-} from "firebase/firestore";
-
+import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 const AuthContext = createContext(null);
-
-const demoUsers = [
-  {
-    email: "hod.it@smartclassroom.com",
-    password: "Hod@123",
-    name: "Dr. IT Department HOD",
-    role: "HOD",
-    department: "Information Technology",
-  },
-];
+const ADMIN_EMAIL = "admin@smartclassroom.com";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = async (email, password, selectedRole) => {
-    const cleanEmail = email.trim().toLowerCase();
-
-    // Firebase Authentication for Admin.
-    if (selectedRole === "admin") {
+  // Restore the Firebase session after refresh.
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
-        const credential = await signInWithEmailAndPassword(
-          auth,
-          cleanEmail,
-          password
-        );
-
-        const firebaseUser = credential.user;
-
-        // Only the configured Admin account is allowed here.
-        if (firebaseUser.email?.toLowerCase() !== "admin@smartclassroom.com") {
-          await signOut(auth);
-          return {
-            success: false,
-            message: "This account is not authorized as College Admin.",
-          };
+        if (!firebaseUser) {
+          setUser(null);
+          return;
         }
 
-        const loggedUser = {
-          uid: firebaseUser.uid,
-          name: "College Administrator",
-          email: firebaseUser.email,
-          role: "COLLEGE_ADMIN",
-          department: "Administration",
-        };
+        const email = firebaseUser.email?.toLowerCase() ?? "";
 
-        setUser(loggedUser);
-        return { success: true, user: loggedUser };
-      } catch (error) {
-        console.error("Admin login failed:", error);
-        return {
-          success: false,
-          message:
-            error.code === "auth/invalid-credential"
-              ? "Invalid Admin email or password."
-              : "Admin login failed. Check your Firebase account and connection.",
-        };
-      }
-    }
-
-    // Keep HOD demo login temporarily.
-    if (selectedRole === "hod") {
-      const foundUser = demoUsers.find(
-        (item) =>
-          item.email.toLowerCase() === cleanEmail &&
-          item.password === password
-      );
-
-      if (!foundUser) {
-        return {
-          success: false,
-          message: "Invalid email or password.",
-        };
-      }
-
-      const loggedUser = {
-        name: foundUser.name,
-        email: foundUser.email,
-        role: foundUser.role,
-        department: foundUser.department,
-        className: "",
-      };
-
-      setUser(loggedUser);
-      return { success: true, user: loggedUser };
-    }
-
-    // Firebase Authentication for Class Advisors.
-    if (selectedRole === "advisor") {
-      try {
-        const credential = await signInWithEmailAndPassword(
-          auth,
-          cleanEmail,
-          password
-        );
-
-        const firebaseUser = credential.user;
-        const profileRef = doc(db, "users", firebaseUser.uid);
-        const profileSnapshot = await getDoc(profileRef);
-
-        if (!profileSnapshot.exists()) {
-          await signOut(auth);
-          return {
-            success: false,
-            message: "Advisor profile not found. Contact the administrator.",
-          };
+        if (email === ADMIN_EMAIL) {
+          setUser({
+            uid: firebaseUser.uid,
+            name: "College Administrator",
+            email: firebaseUser.email,
+            role: "COLLEGE_ADMIN",
+            department: "Administration",
+          });
+          return;
         }
 
-        const profile = profileSnapshot.data();
+        const snapshot = await getDoc(
+          doc(db, "users", firebaseUser.uid)
+        );
+
+        if (!snapshot.exists()) {
+          await signOut(auth);
+          setUser(null);
+          return;
+        }
+
+        const profile = snapshot.data();
 
         if (
           profile.role !== "CLASS_ADVISOR" ||
@@ -133,44 +63,142 @@ export function AuthProvider({ children }) {
           !profile.assignedClassId
         ) {
           await signOut(auth);
-          return {
-            success: false,
-            message:
-              "Your account is awaiting Admin approval and class assignment.",
-          };
+          setUser(null);
+          return;
         }
 
-        const loggedUser = {
+        setUser({
+          ...profile,
           uid: firebaseUser.uid,
-          name: profile.name || firebaseUser.displayName || "Class Advisor",
-          email: firebaseUser.email || cleanEmail,
-          role: profile.role,
-          department: profile.department || "",
-          className: profile.className || "",
-          assignedClassId: profile.assignedClassId,
+          email: firebaseUser.email,
+          role: "CLASS_ADVISOR",
+        });
+      } catch (error) {
+        console.error("Failed to restore session:", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // Login
+  const login = useCallback(async (email, password, selectedRole) => {
+    const cleanEmail = email.trim().toLowerCase();
+
+    const role = String(selectedRole ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ");
+
+    console.log("[AuthContext] Selected role:", role);
+
+    // College Admin
+    if (["admin", "college admin", "college administrator"].includes(role)) {
+      if (cleanEmail !== ADMIN_EMAIL) {
+        throw new Error(
+          "Please use the registered College Admin email."
+        );
+      }
+
+      const credential = await signInWithEmailAndPassword(
+        auth,
+        cleanEmail,
+        password
+      );
+
+      const firebaseUser = credential.user;
+
+      if (firebaseUser.email?.toLowerCase() !== ADMIN_EMAIL) {
+        await signOut(auth);
+        throw new Error("Unauthorized College Admin account.");
+      }
+
+      const adminUser = {
+        uid: firebaseUser.uid,
+        name: "College Administrator",
+        email: firebaseUser.email,
+        role: "COLLEGE_ADMIN",
+        department: "Administration",
+      };
+
+      setUser(adminUser);
+      return adminUser;
+    }
+
+    // HOD demo login
+    if (["hod", "head of department"].includes(role)) {
+      const hodUser = {
+        uid: `hod-${cleanEmail}`,
+        name: "Head of Department",
+        email: cleanEmail,
+        role: "HOD",
+        department: "Information Technology",
+      };
+
+      setUser(hodUser);
+      return hodUser;
+    }
+
+    // Class Advisor
+    if (["advisor", "class advisor"].includes(role)) {
+      const credential = await signInWithEmailAndPassword(
+        auth,
+        cleanEmail,
+        password
+      );
+
+      try {
+        const firebaseUser = credential.user;
+        const snapshot = await getDoc(
+          doc(db, "users", firebaseUser.uid)
+        );
+
+        if (!snapshot.exists()) {
+          throw new Error(
+            "Advisor profile not found. Contact the administrator."
+          );
+        }
+
+        const profile = snapshot.data();
+
+        if (profile.role !== "CLASS_ADVISOR") {
+          throw new Error("This account is not a Class Advisor.");
+        }
+
+        if (profile.approvalStatus !== "approved") {
+          throw new Error(
+            "Your advisor account is awaiting College Admin approval."
+          );
+        }
+
+        if (!profile.assignedClassId) {
+          throw new Error("No class has been assigned to your account.");
+        }
+
+        const advisorUser = {
+          ...profile,
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          role: "CLASS_ADVISOR",
         };
 
-        setUser(loggedUser);
-        return { success: true, user: loggedUser };
+        setUser(advisorUser);
+        return advisorUser;
       } catch (error) {
-        console.error("Advisor login failed:", error);
-        return {
-          success: false,
-          message:
-            error.code === "auth/invalid-credential"
-              ? "Invalid email or password."
-              : "Advisor login failed. Check your Firebase configuration and connection.",
-        };
+        await signOut(auth);
+        throw error;
       }
     }
 
-    return {
-      success: false,
-      message: "Please select a valid account role.",
-    };
-  };
+    throw new Error(`Invalid login role: "${selectedRole}".`);
+  }, []);
 
-  const logout = async () => {
+  // Logout
+  const logout = useCallback(async () => {
     try {
       if (auth.currentUser) {
         await signOut(auth);
@@ -178,15 +206,32 @@ export function AuthProvider({ children }) {
     } finally {
       setUser(null);
     }
-  };
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        isAuthenticated: Boolean(user),
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
+// Custom hook
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used inside AuthProvider.");
+  }
+
+  return context;
 }
+
+export default AuthContext;
