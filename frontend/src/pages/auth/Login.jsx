@@ -1,16 +1,17 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./Login.css";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [role, setRole] = useState("admin");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
   const { login } = useAuth();
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     email: "",
@@ -28,48 +29,75 @@ const navigate = useNavigate();
     setMessage("");
   };
 
-  
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    setMessage("");
 
-const handleLogin = async (event) => {
-  event.preventDefault();
-  setMessage("");
+    if (submitting) return;
 
-  try {
-    const loggedInUser = await login(
-      form.email,
-      form.password,
-      role
-    );
+    setSubmitting(true);
 
-    const routes = {
-      COLLEGE_ADMIN: "/admin/dashboard",
-      HOD: "/hod/dashboard",
-      CLASS_ADVISOR: "/advisor/dashboard",
-    };
+    try {
+      const loggedInUser = await login(
+        form.email,
+        form.password,
+        role
+      );
 
-    const destination = routes[loggedInUser.role];
+      const routes = {
+        COLLEGE_ADMIN: "/admin/dashboard",
+        HOD: "/hod/dashboard",
+        CLASS_ADVISOR: "/advisor/dashboard",
+      };
 
-    if (!destination) {
-      throw new Error("No dashboard is configured for this role.");
+      const destination = routes[loggedInUser?.role];
+
+      if (!destination) {
+        throw new Error(
+          "No dashboard is configured for this role."
+        );
+      }
+
+      navigate(destination, { replace: true });
+    } catch (error) {
+      console.error(
+        "Login failed:",
+        error.code,
+        error.message
+      );
+
+      const messages = {
+        "auth/invalid-credential":
+          "Invalid email or password. Check your credentials and try again.",
+
+        "auth/user-not-found":
+          "This email is not registered in Firebase Authentication.",
+
+        "auth/wrong-password":
+          "Incorrect password. Please try again.",
+
+        "auth/too-many-requests":
+          "Too many attempts. Please try again later.",
+
+        "auth/network-request-failed":
+          "Network error. Check your internet connection.",
+
+        "auth/invalid-email":
+          "Please enter a valid email address.",
+
+        "auth/operation-not-allowed":
+          "Email and password sign-in is not enabled in Firebase.",
+      };
+
+      setMessage(
+        messages[error.code] ||
+          error.message ||
+          "Unable to sign in. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
     }
-
-    navigate(destination, { replace: true });
-  } catch (error) {
-    console.error("Login failed:", error);
-
-    setMessage(
-      error.code === "auth/invalid-credential"
-        ? "Invalid email or password."
-        : error.code === "auth/too-many-requests"
-        ? "Too many attempts. Please try again later."
-        : error.message || "Unable to sign in. Please try again."
-    );
-  }
-};
-
-  
- 
- 
+  };
 
   return (
     <main className="login-page">
@@ -157,57 +185,60 @@ const handleLogin = async (event) => {
               Continue as
             </label>
 
-          
-<div className="login-role-options">
-  {[
-    {
-      id: "admin",
-      icon: "⚙️",
-      title: "Admin",
-      subtitle: "Manage system",
-    },
-    {
-      id: "hod",
-      icon: "🏢",
-      title: "HOD",
-      subtitle: "Manage department",
-    },
-    {
-      id: "advisor",
-      icon: "👨‍🏫",
-      title: "Advisor",
-      subtitle: "Guide students",
-    },
-  ].map((item) => (
-    <button
-      key={item.id}
-      type="button"
-      className={`login-role-option ${
-        role === item.id ? "selected" : ""
-      }`}
-      onClick={() => {
-        setRole(item.id);
-        setMessage("");
-      }}
-      aria-pressed={role === item.id}
-    >
-      <span className="login-role-icon">{item.icon}</span>
+            <div className="login-role-options">
+              {[
+                {
+                  id: "admin",
+                  icon: "⚙️",
+                  title: "Admin",
+                  subtitle: "Manage system",
+                },
+                {
+                  id: "hod",
+                  icon: "🏢",
+                  title: "HOD",
+                  subtitle: "Manage department",
+                },
+                {
+                  id: "advisor",
+                  icon: "👨‍🏫",
+                  title: "Advisor",
+                  subtitle: "Guide students",
+                },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`login-role-option ${
+                    role === item.id ? "selected" : ""
+                  }`}
+                  onClick={() => {
+                    setRole(item.id);
+                    setMessage("");
+                  }}
+                  aria-pressed={role === item.id}
+                >
+                  <span className="login-role-icon">
+                    {item.icon}
+                  </span>
 
-      <span className="login-role-text">
-        <strong>{item.title}</strong>
-        <small>{item.subtitle}</small>
-      </span>
+                  <span className="login-role-text">
+                    <strong>{item.title}</strong>
+                    <small>{item.subtitle}</small>
+                  </span>
 
-      <span className="login-role-check">
-        {role === item.id ? "✓" : ""}
-      </span>
-    </button>
-  ))}
-</div>
-
+                  <span className="login-role-check">
+                    {role === item.id ? "✓" : ""}
+                  </span>
+                </button>
+              ))}
+            </div>
 
             <div className="login-input-group">
-              <label className="login-label" htmlFor="login-email">
+              <label
+                className="login-label"
+                htmlFor="login-email"
+              >
                 Email address
               </label>
 
@@ -218,14 +249,17 @@ const handleLogin = async (event) => {
                 placeholder="you@example.com"
                 value={form.email}
                 onChange={handleChange}
-                autoComplete="email"
+                autoComplete="username"
                 required
               />
             </div>
 
             <div className="login-input-group">
               <div className="login-password-label">
-                <label className="login-label" htmlFor="login-password">
+                <label
+                  className="login-label"
+                  htmlFor="login-password"
+                >
                   Password
                 </label>
 
@@ -252,7 +286,12 @@ const handleLogin = async (event) => {
                 <button
                   type="button"
                   className="login-password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() =>
+                    setShowPassword((previous) => !previous)
+                  }
+                  aria-label={
+                    showPassword ? "Hide password" : "Show password"
+                  }
                 >
                   {showPassword ? "Hide" : "Show"}
                 </button>
@@ -260,14 +299,22 @@ const handleLogin = async (event) => {
             </div>
 
             {message && (
-              <div className="login-message" role="status">
+              <div className="login-message" role="alert">
                 {message}
               </div>
             )}
 
-            <button type="submit" className="login-submit">
-              <span>Sign in to your account</span>
-              <span className="login-submit-arrow">→</span>
+            <button
+              type="submit"
+              className="login-submit"
+              disabled={submitting}
+            >
+              <span>
+                {submitting ? "Signing in..." : "Sign in to your account"}
+              </span>
+              <span className="login-submit-arrow">
+                {submitting ? "…" : "→"}
+              </span>
             </button>
 
             <p className="login-security-note">

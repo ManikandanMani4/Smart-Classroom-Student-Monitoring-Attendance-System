@@ -44,6 +44,27 @@ function PendingAdvisorRequests() {
   const [busyUid, setBusyUid] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [institutionIdInput, setInstitutionIdInput] = useState(() =>
+    String(
+      user?.institutionId ||
+      user?.institution_id ||
+      user?.institution?.id ||
+      ""
+    ).trim()
+  );
+
+  useEffect(() => {
+    const profileInstitutionId = String(
+      user?.institutionId ||
+      user?.institution_id ||
+      user?.institution?.id ||
+      ""
+    ).trim();
+
+    if (profileInstitutionId && !institutionIdInput) {
+      setInstitutionIdInput(profileInstitutionId);
+    }
+  }, [user, institutionIdInput]);
 
   // Load pending advisor registrations from Firestore.
   const loadRequests = useCallback(async () => {
@@ -87,14 +108,33 @@ function PendingAdvisorRequests() {
         where("approvalStatus", "==", "pending")
       );
 
-      const snapshot = await getDocs(pendingQuery);
+const snapshot = await getDocs(pendingQuery);
 
-      const pending = snapshot.docs.map((item) => ({
-        uid: item.id,
-        ...item.data(),
-      }));
+console.log(
+  "[Pending Advisor Requests] Firebase project:",
+  db.app.options.projectId
+);
 
-      pending.sort(
+console.log(
+  "[Pending Advisor Requests] Matching documents:",
+  snapshot.size
+);
+
+console.table(
+  snapshot.docs.map((item) => ({
+    uid: item.id,
+    email: item.data().email,
+    role: item.data().role,
+    approvalStatus: item.data().approvalStatus,
+  }))
+);
+
+const pending = snapshot.docs.map((item) => ({
+  uid: item.id,
+  ...item.data(),
+}));
+
+pending.sort(
         (a, b) =>
           (b.createdAt?.toMillis?.() || 0) -
           (a.createdAt?.toMillis?.() || 0)
@@ -207,6 +247,26 @@ function PendingAdvisorRequests() {
         );
       }
 
+      // The advisor and face-registration service must use the same institution ID.
+      // Configure this field on the College Admin profile or the selected class record.
+      const institutionId = String(
+        institutionIdInput ||
+        user?.institutionId ||
+        user?.institution_id ||
+        user?.institution?.id ||
+        selectedClass.institutionId ||
+        selectedClass.institution_id ||
+        selectedClass.institution?.id ||
+        ""
+      ).trim();
+
+      if (!institutionId) {
+        throw new Error(
+          "Institution ID is missing. Add institutionId to the College Admin profile " +
+          "or the selected class record before approving advisors."
+        );
+      }
+
       await updateDoc(doc(db, "users", request.uid), {
         approvalStatus: "approved",
         assignedClassId: String(selectedClass.id),
@@ -215,6 +275,7 @@ function PendingAdvisorRequests() {
           selectedClass.className ||
           "",
         department: selectedClass.department || "",
+        institutionId,
         reviewedAt: serverTimestamp(),
         reviewedBy: firebaseUser.uid,
       });
@@ -349,6 +410,24 @@ function PendingAdvisorRequests() {
         >
           {loading ? "Refreshing..." : "↻ Refresh"}
         </button>
+      </div>
+
+      <div className="advisor-institution-config">
+        <label htmlFor="advisor-institution-id">
+          Institution ID (required for face registration)
+        </label>
+        <input
+          id="advisor-institution-id"
+          type="text"
+          value={institutionIdInput}
+          onChange={(event) => setInstitutionIdInput(event.target.value)}
+          placeholder="Enter the institution ID configured in the AI backend"
+          autoComplete="off"
+        />
+        <p>
+          Use the exact same ID configured in the face-registration backend.
+          This value is saved to the advisor profile when you approve the request.
+        </p>
       </div>
 
       <div className="advisor-request-stats">

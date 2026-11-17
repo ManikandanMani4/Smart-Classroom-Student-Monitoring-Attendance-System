@@ -179,15 +179,23 @@ export function AuthProvider({ children }) {
           throw new Error("No class has been assigned to your account.");
         }
 
-        const advisorUser = {
-          ...profile,
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          role: "CLASS_ADVISOR",
-        };
+        const institutionId = String(
+  profile.institutionId ??
+  profile.institution_id ??
+  profile.institution?.id ??
+  ""
+).trim();
 
-        setUser(advisorUser);
-        return advisorUser;
+const advisorUser = {
+  ...profile,
+  uid: firebaseUser.uid,
+  email: firebaseUser.email,
+  role: "CLASS_ADVISOR",
+  institutionId,
+};
+
+setUser(advisorUser);
+return advisorUser;
       } catch (error) {
         await signOut(auth);
         throw error;

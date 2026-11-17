@@ -1,7 +1,9 @@
+
 import cv2
 import json
 import os
-import numpy as np
+import re
+import hashlib
 
 from app.detection.face_detector import FaceDetector
 from app.recognition.embedding import get_embedding
@@ -9,6 +11,24 @@ from app.recognition.embedding import get_embedding
 
 STUDENT_FILE = "data/students/students.json"
 EMBEDDING_DIR = "data/embeddings"
+
+
+def safe_id(value):
+    """Create a safe filename component."""
+    value = str(value).strip().upper()
+    return re.sub(r"[^A-Z0-9_-]", "_", value)
+
+
+def make_student_key(institution_id, student_id):
+    """Keep identical student IDs separate across institutions."""
+    institution = str(institution_id).strip()
+    student = str(student_id).strip().upper()
+
+    digest = hashlib.sha256(
+        institution.encode("utf-8")
+    ).hexdigest()[:12]
+
+    return f"{digest}_{safe_id(student)}"
 
 
 class StudentRegistration:
@@ -19,142 +39,106 @@ class StudentRegistration:
         os.makedirs("data/students", exist_ok=True)
         os.makedirs(EMBEDDING_DIR, exist_ok=True)
 
-    def register(self, student_id, student_name):
+    def register(
+        self,
+        student_id,
+        student_name,
+        institution_id,
+        class_id=None,
+        advisor_id=None
+    ):
+        student_id = str(student_id).strip().upper()
+        student_name = str(student_name).strip()
+        institution_id = str(institution_id).strip()
+
+        if not institution_id or not student_id or not student_name:
+            print("Student ID, name, and institution ID are required.")
+            return
+
+        student_key = make_student_key(institution_id, student_id)
 
         camera = cv2.VideoCapture(0)
 
         if not camera.isOpened():
-            print("Could not open camera")
+            print("Could not open camera.")
             return
 
         embeddings = []
         target_samples = 5
 
-        print()
-        print("===================================")
-        print("     STUDENT FACE REGISTRATION")
-        print("===================================")
-        print("Student ID:", student_id)
-        print("Student Name:", student_name)
-        print()
-        print("Look at the camera.")
-        print("Move your head slightly between samples.")
-        print("Keep only ONE face visible.")
-        print()
+        try:
+            print("Student ID:", student_id)
+            print("Student Name:", student_name)
+            print("Institution ID:", institution_id)
+            print("Keep exactly one face visible.")
+            print("Press S to capture a sample; Q to cancel.")
 
-        while True:
+            while len(embeddings) < target_samples:
+                ret, frame = camera.read()
 
-            ret, frame = camera.read()
+                if not ret:
+                    print("Could not read camera frame.")
+                    return
 
-            if not ret:
-                print("Could not read camera frame")
-                break
+                faces = self.detector.detect(frame)
 
-            faces = self.detector.detect(frame)
+                for face in faces:
+                    x1, y1, x2, y2 = map(int, face.bbox)
 
-            for face in faces:
-
-                x1, y1, x2, y2 = map(int, face.bbox)
-
-                cv2.rectangle(
-                    frame,
-                    (x1, y1),
-                    (x2, y2),
-                    (0, 255, 0),
-                    2
-                )
+                    cv2.rectangle(
+                        frame, (x1, y1), (x2, y2),
+                        (0, 255, 0), 2
+                    )
 
                 cv2.putText(
                     frame,
                     f"Samples: {len(embeddings)}/{target_samples}",
-                    (x1, y1 - 35),
+                    (20, 35),
                     cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7,
+                    0.8,
                     (0, 255, 0),
                     2
                 )
 
-                cv2.putText(
-                    frame,
-                    "Press S to capture",
-                    (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    (0, 255, 0),
-                    2
-                )
+                cv2.imshow("Student Registration", frame)
+                key = cv2.waitKey(1) & 0xFF
 
-            cv2.imshow(
-                "Student Registration",
-                frame
-            )
+                if key == ord("q"):
+                    print("Registration cancelled.")
+                    return
 
-            key = cv2.waitKey(1) & 0xFF
+                if key == ord("s"):
+                    if len(faces) != 1:
+                        print("Please keep exactly one face visible.")
+                        continue
 
-            # Capture sample
-            if key == ord("s"):
+                    embedding = get_embedding(faces[0])
 
-                if len(faces) != 1:
+                    if embedding is None:
+                        print("Could not generate embedding.")
+                        continue
 
+                    embeddings.append(embedding.tolist())
                     print(
-                        "Please keep exactly one face visible."
+                        f"Captured sample {len(embeddings)}/{target_samples}"
                     )
 
-                    continue
+        finally:
+            camera.release()
+            cv2.destroyAllWindows()
 
-                embedding = get_embedding(faces[0])
-
-                if embedding is None:
-
-                    print(
-                        "Could not generate embedding."
-                    )
-
-                    continue
-
-                embeddings.append(
-                    embedding.tolist()
-                )
-
-                print(
-                    f"Face sample {len(embeddings)}/{target_samples} captured."
-                )
-
-                if len(embeddings) >= target_samples:
-
-                    break
-
-            # Cancel
-            elif key == ord("q"):
-
-                print("Registration cancelled.")
-                camera.release()
-                cv2.destroyAllWindows()
-                return
-
-        camera.release()
-        cv2.destroyAllWindows()
-
-        if len(embeddings) < target_samples:
-
-            print(
-                "Registration failed. "
-                "Not enough samples."
-            )
-
-            return
-
-        # Save all embeddings
         embedding_path = os.path.join(
             EMBEDDING_DIR,
-            f"{student_id}.json"
+            f"{student_key}.json"
         )
 
-        with open(embedding_path, "w") as file:
-
+        # Save the new embedding file first.
+        with open(embedding_path, "w", encoding="utf-8") as file:
             json.dump(
                 {
+                    "student_key": student_key,
                     "student_id": student_id,
+                    "institution_id": institution_id,
                     "embeddings": embeddings
                 },
                 file,
@@ -162,72 +146,83 @@ class StudentRegistration:
             )
 
         self.save_student(
-            student_id,
-            student_name,
-            embedding_path
+            student_id=student_id,
+            student_name=student_name,
+            institution_id=institution_id,
+            class_id=class_id,
+            advisor_id=advisor_id,
+            student_key=student_key,
+            embedding_path=embedding_path
         )
 
-        print()
-        print("===================================")
-        print(" Student registered successfully!")
-        print("===================================")
+        print("Student registered successfully.")
+        print("Institution ID:", institution_id)
         print("Student ID:", student_id)
-        print("Student Name:", student_name)
-        print("Samples:", len(embeddings))
-        print("Saved:", embedding_path)
+        print("Saved embedding:", embedding_path)
 
     def save_student(
         self,
         student_id,
         student_name,
+        institution_id,
+        class_id,
+        advisor_id,
+        student_key,
         embedding_path
     ):
-
         students = []
 
         if os.path.exists(STUDENT_FILE):
-
-            with open(STUDENT_FILE, "r") as file:
-
+            with open(STUDENT_FILE, "r", encoding="utf-8") as file:
                 try:
                     students = json.load(file)
-
                 except json.JSONDecodeError:
+                    raise ValueError(
+                        "Student registry JSON is invalid. "
+                        "Back it up and repair it before registering."
+                    )
 
-                    students = []
+        if not isinstance(students, list):
+            raise ValueError("Student registry must be a JSON array.")
 
-        # Remove previous record for same ID
+        # Replace only the same student within the same institution.
         students = [
-            student
-            for student in students
-            if student.get("student_id") != student_id
+            student for student in students
+            if not (
+                str(student.get("institution_id", "")).strip()
+                == institution_id
+                and str(student.get("student_id", "")).strip().upper()
+                == student_id
+            )
         ]
 
-        student = {
+        students.append({
+            "student_key": student_key,
             "student_id": student_id,
             "student_name": student_name,
+            "institution_id": institution_id,
+            "class_id": class_id,
+            "advisor_id": advisor_id,
             "embedding_file": embedding_path
-        }
+        })
 
-        students.append(student)
+        temporary_file = STUDENT_FILE + ".tmp"
 
-        with open(STUDENT_FILE, "w") as file:
+        with open(temporary_file, "w", encoding="utf-8") as file:
+            json.dump(students, file, indent=4)
 
-            json.dump(
-                students,
-                file,
-                indent=4
-            )
+        os.replace(temporary_file, STUDENT_FILE)
 
 
 if __name__ == "__main__":
-
-    student_id = input("Enter Student ID: ")
-    student_name = input("Enter Student Name: ")
+    student_id = input("Enter Student ID: ").strip()
+    student_name = input("Enter Student Name: ").strip()
+    institution_id = input("Enter Institution ID: ").strip()
 
     registration = StudentRegistration()
 
     registration.register(
-        student_id,
-        student_name
+        student_id=student_id,
+        student_name=student_name,
+        institution_id=institution_id
     )

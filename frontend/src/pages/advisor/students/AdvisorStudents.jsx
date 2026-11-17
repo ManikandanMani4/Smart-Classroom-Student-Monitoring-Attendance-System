@@ -4,150 +4,137 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import "./AdvisorStudents.css";
 
-
-
-
-
 function readArray(key) {
 
-  try {
+  try {
 
-    const value = JSON.parse(localStorage.getItem(key) || "[]");
+    const value = JSON.parse(localStorage.getItem(key) || "[]");
 
-    return Array.isArray(value) ? value : [];
+    return Array.isArray(value) ? value : [];
 
-  } catch {
+  } catch {
 
-    return [];
+    return [];
 
-  }
+  }
 
 }
-
-
 
 function todayString() {
 
-  const d = new Date();
+  const d = new Date();
 
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 }
-
-
 
 function getStudentId(s) {
 
-  return String(
+  return String(
 
-    s?.studentId || s?.student_id || s?.studentIdNumber ||
+    s?.studentId || s?.student_id || s?.studentIdNumber ||
 
-    s?.rollNumber || s?.registerNumber || s?.id || ""
+    s?.rollNumber || s?.registerNumber || s?.id || ""
 
-  ).trim();
+  ).trim();
 
 }
-
-
 
 function getRecordStudentId(r) {
 
-  return String(
+  return String(
 
-    r?.studentId || r?.student_id || r?.studentIdNumber ||
+    r?.studentId || r?.student_id || r?.studentIdNumber ||
 
-    r?.rollNumber || r?.registerNumber || ""
+    r?.rollNumber || r?.registerNumber || ""
 
-  ).trim();
+  ).trim();
 
 }
-
-
 
 function getRecordDate(r) {
 
-  return String(r?.date || r?.attendanceDate || r?.createdAt || "").slice(0, 10);
+  return String(r?.date || r?.attendanceDate || r?.createdAt || "").slice(0, 10);
 
 }
-
-
 
 function getName(s) {
 
-  return s?.name || s?.studentName || s?.fullName || "Unknown student";
+  return s?.name || s?.studentName || s?.fullName || "Unknown student";
 
 }
-
-
 
 function notifyUpdate() {
 
-  window.dispatchEvent(new Event("smartclassroom:dataUpdated"));
+  window.dispatchEvent(new Event("smartclassroom:dataUpdated"));
 
 }
 
-
-
 export default function AdvisorStudents() {
   const { user } = useAuth();
-  const advisorId = user?.uid || user?.id || user?.email || null;
+
+const advisorId = user?.uid || user?.id || user?.email || null;
+
+const institutionId = String(
+  user?.institutionId ||
+  user?.institution_id ||
+  user?.institution?.id ||
+  ""
+).trim();
   const safeAdvisorId = advisorId ? String(advisorId).replace(/[^a-zA-Z0-9_-]/g, "_") : null;
   const studentsKey = safeAdvisorId ? `smartclassroom_students_${safeAdvisorId}` : null;
   const attendanceKey = safeAdvisorId ? `smartclassroom_attendance_${safeAdvisorId}` : null;
 
-  // All hooks must stay inside the component.
+  // All hooks must stay inside the component.
+const assignedClassId = String(
+  user?.assignedClassId || user?.classId || ""
+).trim();
 
-  const videoRef = useRef(null);
+const assignedClassName = String(
+  user?.assignedClassName || user?.className || ""
+).trim();
+  const videoRef = useRef(null);
 
-  const canvasRef = useRef(null);
+  const canvasRef = useRef(null);
 
-  const streamRef = useRef(null);
+  const streamRef = useRef(null);
 
+  const [students, setStudents] = useState([]);
 
+  const [attendance, setAttendance] = useState([]);
 
-  const [students, setStudents] = useState([]);
+  const [search, setSearch] = useState("");
 
-  const [attendance, setAttendance] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(todayString());
 
-  const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState(todayString());
+  const [error, setError] = useState("");
 
-  const [showForm, setShowForm] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
-  const [error, setError] = useState("");
+  const [capturedFace, setCapturedFace] = useState(null);
 
+  const [faceMessage, setFaceMessage] = useState("");
 
+  const [faceRegistering, setFaceRegistering] = useState(false);
 
-  const [cameraOpen, setCameraOpen] = useState(false);
+  const [form, setForm] = useState({
 
-  const [capturedFace, setCapturedFace] = useState(null);
+    studentId: "",
 
-  const [faceMessage, setFaceMessage] = useState("");
+    name: "",
 
-  const [faceRegistering, setFaceRegistering] = useState(false);
+    email: "",
 
+    department: "Information Technology",
 
+    year: "III",
 
-  const [form, setForm] = useState({
+    section: "A",
 
-    studentId: "",
+  });
 
-    name: "",
-
-    email: "",
-
-    department: "Information Technology",
-
-    year: "III",
-
-    section: "A",
-
-  });
-
-
-
-  
 useEffect(() => {
   function reload() {
     if (!studentsKey || !attendanceKey) return;
@@ -169,286 +156,249 @@ useEffect(() => {
   };
 }, [studentsKey, attendanceKey]);
 
+  useEffect(() => {
 
+    if (cameraOpen && videoRef.current && streamRef.current) {
 
+      videoRef.current.srcObject = streamRef.current;
 
-  useEffect(() => {
+      videoRef.current.play().catch(() => {
 
-    if (cameraOpen && videoRef.current && streamRef.current) {
+        setFaceMessage("Unable to start camera preview.");
 
-      videoRef.current.srcObject = streamRef.current;
+      });
 
-      videoRef.current.play().catch(() => {
+    }
 
-        setFaceMessage("Unable to start camera preview.");
+  }, [cameraOpen]);
 
-      });
+  useEffect(() => {
 
-    }
+    return () => {
 
-  }, [cameraOpen]);
+      streamRef.current?.getTracks().forEach((track) => track.stop());
 
+    };
 
+  }, []);
 
-  useEffect(() => {
+  function saveData(nextStudents, nextAttendance) {
 
-    return () => {
+    localStorage.setItem(studentsKey, JSON.stringify(nextStudents));
 
-      streamRef.current?.getTracks().forEach((track) => track.stop());
+    localStorage.setItem(attendanceKey, JSON.stringify(nextAttendance));
 
-    };
+    setStudents(nextStudents);
 
-  }, []);
+    setAttendance(nextAttendance);
 
+    notifyUpdate();
 
+  }
 
-  function saveData(nextStudents, nextAttendance) {
+  async function openCamera() {
 
-    localStorage.setItem(studentsKey, JSON.stringify(nextStudents));
+    setFaceMessage("");
 
-    localStorage.setItem(attendanceKey, JSON.stringify(nextAttendance));
+    if (!navigator.mediaDevices?.getUserMedia) {
 
-    setStudents(nextStudents);
+      setFaceMessage("Camera unavailable. Use localhost or HTTPS.");
 
-    setAttendance(nextAttendance);
+      return;
 
-    notifyUpdate();
+    }
 
-  }
+    try {
 
+      const stream = await navigator.mediaDevices.getUserMedia({
 
+        video: {
 
-  async function openCamera() {
+          facingMode: "user",
 
-    setFaceMessage("");
+          width: { ideal: 1280 },
 
+          height: { ideal: 720 },
 
+        },
 
-    if (!navigator.mediaDevices?.getUserMedia) {
+        audio: false,
 
-      setFaceMessage("Camera unavailable. Use localhost or HTTPS.");
+      });
 
-      return;
+      streamRef.current = stream;
 
-    }
+      setCameraOpen(true);
 
+      setCapturedFace(null);
 
+    } catch {
 
-    try {
+      setFaceMessage("Camera permission denied or camera is unavailable.");
 
-      const stream = await navigator.mediaDevices.getUserMedia({
+    }
 
-        video: {
+  }
 
-          facingMode: "user",
+  function closeCamera() {
 
-          width: { ideal: 1280 },
+    streamRef.current?.getTracks().forEach((track) => track.stop());
 
-          height: { ideal: 720 },
+    streamRef.current = null;
 
-        },
+    setCameraOpen(false);
 
-        audio: false,
+  }
 
-      });
+  function captureFace() {
 
+    const video = videoRef.current;
 
+    const canvas = canvasRef.current;
 
-      streamRef.current = stream;
+    if (!video || !canvas || !video.videoWidth) {
 
-      setCameraOpen(true);
+      setFaceMessage("Wait until the camera preview is ready.");
 
-      setCapturedFace(null);
+      return;
 
-    } catch {
+    }
 
-      setFaceMessage("Camera permission denied or camera is unavailable.");
+    canvas.width = video.videoWidth;
 
-    }
+    canvas.height = video.videoHeight;
 
-  }
+    const context = canvas.getContext("2d");
 
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+    setCapturedFace(canvas.toDataURL("image/jpeg", 0.9));
 
-  function closeCamera() {
+    setFaceMessage("Photo captured. Register it after entering the Student ID.");
 
-    streamRef.current?.getTracks().forEach((track) => track.stop());
+    closeCamera();
 
-    streamRef.current = null;
+  }
 
-    setCameraOpen(false);
+  function changeForm(event) {
 
-  }
+    setForm((old) => ({
 
+      ...old,
 
+      [event.target.name]: event.target.value,
 
-  function captureFace() {
+    }));
 
-    const video = videoRef.current;
+  }
 
-    const canvas = canvasRef.current;
+  async function registerFace(studentId) {
 
+    if (!studentId.trim()) {
 
+      setFaceMessage("Enter the Student ID first.");
 
-    if (!video || !canvas || !video.videoWidth) {
+      return false;
 
-      setFaceMessage("Wait until the camera preview is ready.");
+    }
 
-      return;
+    if (
+      typeof capturedFace !== "string" ||
+      !capturedFace.startsWith("data:image/")
+    ) {
+      setFaceMessage("Capture a valid student photo first, then try again.");
+      return false;
+    }
 
-    }
+    if (!institutionId) {
+      setFaceMessage(
+        "Institution ID is missing from your profile. Please contact the administrator."
+      );
+      return false;
+    }
 
+    setFaceRegistering(true);
 
+    try {
 
-    canvas.width = video.videoWidth;
+      const payload = {
+        institutionId,
+        studentId: studentId.trim().toUpperCase(),
+        studentName: form.name.trim(),
+        image: capturedFace,
+        classId: assignedClassId,
+        className: assignedClassName,
+        advisorId,
+      };
 
-    canvas.height = video.videoHeight;
+      // Diagnostic logs: confirms the captured data URL is present before sending.
+      console.log("[Face registration] image exists:", Boolean(payload.image));
+      console.log("[Face registration] image length:", payload.image.length);
+      console.log("[Face registration] image prefix:", payload.image.slice(0, 30));
 
+      const response = await fetch("http://localhost:5000/api/ai/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
+      const result = await response.json().catch(() => ({}));
 
-    const context = canvas.getContext("2d");
+      if (!response.ok || !result.success) {
 
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        throw new Error(result.message || "Face registration failed.");
 
+      }
 
+      setFaceMessage("Face registered successfully.");
 
-    setCapturedFace(canvas.toDataURL("image/jpeg", 0.9));
+      return true;
 
-    setFaceMessage("Photo captured. Register it after entering the Student ID.");
+    } catch (e) {
 
-    closeCamera();
+      setFaceMessage(
 
-  }
+        e.message ||
 
+        "Registration failed. Check the backend and registration endpoint."
 
+      );
 
-  function changeForm(event) {
+      return false;
 
-    setForm((old) => ({
+    } finally {
 
-      ...old,
+      setFaceRegistering(false);
 
-      [event.target.name]: event.target.value,
+    }
 
-    }));
+  }
 
-  }
+  async function addStudent(event) {
 
+    event.preventDefault();
 
+    setError("");
 
-  async function registerFace(studentId) {
+    const id = form.studentId.trim();
 
-    if (!studentId.trim()) {
+    const name = form.name.trim();
 
-      setFaceMessage("Enter the Student ID first.");
+    if (!id || !name) {
 
-      return false;
+      setError("Student ID and name are required.");
 
-    }
+      return;
 
+    }
+if (!assignedClassId || !advisorId) {
+  setError(
+    "Your class or advisor assignment is missing. " +
+    "Please contact the administrator."
+  );
+  return;
+}
 
-
-    if (!capturedFace) {
-
-      setFaceMessage("Capture a photo first.");
-
-      return false;
-
-    }
-
-
-
-    setFaceRegistering(true);
-
-    setFaceMessage("");
-
-
-
-    try {
-
-      const response = await fetch("http://localhost:5000/api/ai/register", {
-
-        method: "POST",
-
-        headers: { "Content-Type": "application/json" },
-
-        body: JSON.stringify({
-
-  studentId,
-
-  studentName: form.name.trim(),
-
-  image: capturedFace,
-
-}),
-
-      });
-
-
-
-      const result = await response.json();
-
-
-
-      if (!response.ok || !result.success) {
-
-        throw new Error(result.message || "Face registration failed.");
-
-      }
-
-
-
-      setFaceMessage("Face registered successfully.");
-
-      return true;
-
-    } catch (e) {
-
-      setFaceMessage(
-
-        e.message ||
-
-        "Registration failed. Check the backend and registration endpoint."
-
-      );
-
-      return false;
-
-    } finally {
-
-      setFaceRegistering(false);
-
-    }
-
-  }
-
-
-
-  async function addStudent(event) {
-
-    event.preventDefault();
-
-    setError("");
-
-
-
-    const id = form.studentId.trim();
-
-    const name = form.name.trim();
-
-
-
-    if (!id || !name) {
-
-      setError("Student ID and name are required.");
-
-      return;
-
-    }
-
-
-
-    
 const normalizedId = id.trim().toUpperCase();
 
 // Read the latest saved data as well as the current React state.
@@ -476,870 +426,704 @@ if (duplicateStudent) {
   return;
 }
 
+    // Require face registration before adding the student.
 
+    if (!capturedFace) {
 
+      setError("Capture the student's face before saving.");
 
-    // Require face registration before adding the student.
+      return;
 
-    if (!capturedFace) {
+    }
 
-      setError("Capture the student's face before saving.");
+    const registered = await registerFace(id);
 
-      return;
+    if (!registered) return;
 
-    }
-
-
-
-    const registered = await registerFace(id);
-
-    if (!registered) return;
-
-
-
-    const newStudent = {
-  id,
-  studentId: id,
+    const newStudent = {
+  id: id.trim().toUpperCase(),
+  studentId: id.trim().toUpperCase(),
   name,
   email: form.email.trim(),
   department: form.department.trim(),
   year: form.year,
   section: form.section.trim().toUpperCase(),
-  className: user.className,
-  classId: user.assignedClassId,
-  advisorId: user.uid,
+  classId: assignedClassId,
+  className: assignedClassName,
+  advisorId,
 };
 
+    saveData([...students, newStudent], attendance);
 
+    setForm({
 
-    saveData([...students, newStudent], attendance);
+      studentId: "",
 
+      name: "",
 
+      email: "",
 
-    setForm({
+      department: "Information Technology",
 
-      studentId: "",
+      year: "III",
 
-      name: "",
+      section: "A",
 
-      email: "",
+    });
 
-      department: "Information Technology",
+    setCapturedFace(null);
 
-      year: "III",
+    setFaceMessage("");
 
-      section: "A",
+    setShowForm(false);
 
-    });
-
-
-
-    setCapturedFace(null);
-
-    setFaceMessage("");
-
-    setShowForm(false);
-
-  }
-
-
-
+  }
 
 
 async function deleteStudent(id) {
-
-  const studentId = String(id || "").trim();
-
-
-
-  if (!studentId) {
-
-    window.alert("Student ID is missing.");
-
-    return;
-
-  }
-
-
-
-  const confirmed = window.confirm(
-
-    `Permanently delete student ${studentId}, face data, and all backend attendance history? This cannot be undone.`
-
-  );
-
-
-
-  if (!confirmed) return;
-
-
-
-  setError("");
-
-
-
-  try {
-
-    const response = await fetch(
-
-      `http://localhost:5000/api/students/${encodeURIComponent(studentId)}`,
-
-      {
-
-        method: "DELETE",
-
-      }
-
-    );
-
-
-
-    const result = await response.json().catch(() => null);
-
-
-
-    if (!response.ok || !result?.success) {
-
-      throw new Error(
-
-        result?.message || "Unable to delete the student."
-
-      );
-
-    }
-
-
-
-    // Update the browser's local student list.
-
-    const nextStudents = students.filter(
-
-      (student) =>
-
-        getStudentId(student).toUpperCase() !== studentId.toUpperCase()
-
-    );
-
-
-
-    // Remove this student's local attendance entries too.
-
-    const nextAttendance = attendance.filter(
-
-      (record) =>
-
-        getRecordStudentId(record).toUpperCase() !==
-
-        studentId.toUpperCase()
-
-    );
-
-
-
-    saveData(nextStudents, nextAttendance);
-
-
-
-    window.alert(
-
-      `Student ${studentId} deleted successfully. ` +
-
-      `${result.deletedAttendanceRecords || 0} backend attendance record(s) removed.`
-
-    );
-
-  } catch (error) {
-
-    console.error("Student deletion failed:", error);
-
-
-
-    setError(
-
-      error.message ||
-
-      "Deletion failed. Check that both backend services are running."
-
-    );
-
-
-
-    window.alert(
-
-      error.message ||
-
-      "Deletion failed. Check that both backend services are running."
-
-    );
-
-  }
-
+  const studentId = String(id || "").trim();
+
+  if (!studentId) {
+    window.alert("Student ID is missing.");
+    return;
+  }
+
+  if (!institutionId) {
+    window.alert("Institution ID is missing from your profile.");
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `Are you sure you want to permanently delete ${studentId}?`
+  );
+
+  if (!confirmed) return;
+
+  setError("");
+
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/students/${encodeURIComponent(studentId)}?institutionId=${encodeURIComponent(institutionId)}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(
+        result.message || "Unable to delete student."
+      );
+    }
+
+    // Remove student from current UI state and localStorage.
+    const nextStudents = students.filter(
+      (student) =>
+        getStudentId(student).toUpperCase() !==
+        studentId.toUpperCase()
+    );
+
+    // Remove the student's local attendance entries.
+    const nextAttendance = attendance.filter(
+      (record) =>
+        getRecordStudentId(record).toUpperCase() !==
+        studentId.toUpperCase()
+    );
+
+    // IMPORTANT: Updates localStorage AND React state.
+    saveData(nextStudents, nextAttendance);
+
+    setError("");
+
+    window.alert("Student deleted successfully.");
+
+  } catch (error) {
+    console.error("Student deletion failed:", error);
+
+    setError(error.message || "Student deletion failed.");
+  }
 }
 
 
+  function deleteAttendance(record) {
 
-  function deleteAttendance(record) {
+    if (!window.confirm("Delete this attendance record permanently?")) return;
 
-    if (!window.confirm("Delete this attendance record permanently?")) return;
+    const nextAttendance = attendance.filter((r) => {
 
+      if (record.id != null && r.id != null) return r.id !== record.id;
 
+      return r !== record;
 
-    const nextAttendance = attendance.filter((r) => {
+    });
 
-      if (record.id != null && r.id != null) return r.id !== record.id;
+    saveData(students, nextAttendance);
 
-      return r !== record;
-
-    });
-
-
-
-    saveData(students, nextAttendance);
-
-  }
-
-
-
-
+  }
 
 const markPresent = async (student) => {
 
-  try {
+  try {
 
-    const studentId =
+    const studentId =
 
-      student.studentId ||
+      student.studentId ||
 
-      student.student_id ||
+      student.student_id ||
 
-      student.id;
+      student.id;
 
+    if (!studentId) {
 
+      alert("Student ID is missing.");
 
-    if (!studentId) {
+      return;
 
-      alert("Student ID is missing.");
+    }
 
-      return;
+    const response = await fetch(
 
-    }
+      "http://localhost:5000/api/attendance",
 
+      {
 
+        method: "POST",
 
-    const response = await fetch(
+        headers: {
 
-      "http://localhost:5000/api/attendance",
+          "Content-Type": "application/json",
 
-      {
+        },
 
-        method: "POST",
+        body: JSON.stringify({
+  studentId: studentId.trim().toUpperCase(),
+  studentName: form.name.trim(),
+  image: capturedFace,
+  classId: user?.assignedClassId,
+  className:
+    user?.assignedClassName ||
+    user?.className ||
+    "",
+  advisorId: user?.uid || user?.id
+}),
 
-        headers: {
+      }
 
-          "Content-Type": "application/json",
+    );
 
-        },
+    const result = await response.json();
 
-        body: JSON.stringify({
+    if (!response.ok || !result.success) {
 
-          studentId,
+      throw new Error(
 
-          date: selectedDate,
+        result.message || "Failed to save attendance."
 
-          status: "Present",
+      );
 
-        }),
+    }
 
-      }
+    const attendanceResponse = await fetch(
 
-    );
+      `http://localhost:5000/api/attendance?date=${encodeURIComponent(
 
+        selectedDate
 
+      )}`
 
-    const result = await response.json();
+    );
 
+    const attendanceData = await attendanceResponse.json();
 
+    if (!attendanceResponse.ok || !attendanceData.success) {
 
-    if (!response.ok || !result.success) {
+      throw new Error("Attendance was saved, but refreshing failed.");
 
-      throw new Error(
+    }
 
-        result.message || "Failed to save attendance."
+    const updatedAttendance = attendanceData.records.map(
 
-      );
+      (record) => ({
 
-    }
+        ...record,
 
+        date: attendanceData.date,
 
+      })
 
-    const attendanceResponse = await fetch(
+    );
 
-      `http://localhost:5000/api/attendance?date=${encodeURIComponent(
+    saveData(students, updatedAttendance);
 
-        selectedDate
+    alert("Attendance saved successfully.");
 
-      )}`
+  } catch (error) {
 
-    );
+    console.error("Mark attendance error:", error);
 
+    alert(error.message || "Could not save attendance.");
 
-
-    const attendanceData = await attendanceResponse.json();
-
-
-
-    if (!attendanceResponse.ok || !attendanceData.success) {
-
-      throw new Error("Attendance was saved, but refreshing failed.");
-
-    }
-
-
-
-    const updatedAttendance = attendanceData.records.map(
-
-      (record) => ({
-
-        ...record,
-
-        date: attendanceData.date,
-
-      })
-
-    );
-
-
-
-    saveData(students, updatedAttendance);
-
-
-
-    alert("Attendance saved successfully.");
-
-  } catch (error) {
-
-    console.error("Mark attendance error:", error);
-
-    alert(error.message || "Could not save attendance.");
-
-  }
+  }
 
 };
 
+const filteredStudents = useMemo(() => {
+  const assignedClassId = String(
+    user?.assignedClassId || ""
+  ).trim().toUpperCase();
 
+  if (!assignedClassId) return [];
 
+  const q = search.trim().toLowerCase();
 
+  return students.filter((student) => {
+    const studentClassId = String(
+      student.classId || student.class_id || ""
+    ).trim().toUpperCase();
 
-  const filteredStudents = useMemo(() => {
+    if (studentClassId !== assignedClassId) {
+      return false;
+    }
 
-    const q = search.trim().toLowerCase();
+    return !q || [
+      getStudentId(student),
+      getName(student),
+      student.email,
+      student.department,
+      student.className
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(q);
+  });
+}, [students, search, user?.assignedClassId]);
 
-    if (!q) return students;
+  const selectedAttendance = useMemo(
 
+    () => attendance.filter((r) => getRecordDate(r) === selectedDate),
 
+    [attendance, selectedDate]
 
-    return students.filter((s) =>
+  );
 
-      [getStudentId(s), getName(s), s.email, s.department, s.className]
+  return (
 
-        .filter(Boolean)
+    <div className="advisor-students-page">
 
-        .join(" ")
+      <div className="students-toolbar">
 
-        .toLowerCase()
+        <div>
 
-        .includes(q)
+          <h2>Manage students</h2>
 
-    );
+          <p>Add students, register their faces, and manage attendance.</p>
 
-  }, [students, search]);
+        </div>
 
+        <button
 
+          className="students-button students-button-primary"
 
-  const selectedAttendance = useMemo(
+          type="button"
 
-    () => attendance.filter((r) => getRecordDate(r) === selectedDate),
+          onClick={() => {
 
-    [attendance, selectedDate]
+            setShowForm((v) => !v);
 
-  );
+            setError("");
 
+          }}
 
+        >
 
-  return (
+          {showForm ? "Cancel" : "+ Add Student"}
 
-    <div className="advisor-students-page">
+        </button>
 
-      <div className="students-toolbar">
+      </div>
 
-        <div>
+      {showForm && (
 
-          <h2>Manage students</h2>
+        <section className="students-card">
 
-          <p>Add students, register their faces, and manage attendance.</p>
+          <h2>Add student</h2>
 
-        </div>
+          <form onSubmit={addStudent}>
 
+            <div className="students-form-grid">
 
+              <label>
 
-        <button
+                Student ID *
 
-          className="students-button students-button-primary"
+                <input
 
-          type="button"
+                  name="studentId"
 
-          onClick={() => {
+                  value={form.studentId}
 
-            setShowForm((v) => !v);
+                  onChange={changeForm}
 
-            setError("");
+                  required
 
-          }}
+                />
 
-        >
+              </label>
 
-          {showForm ? "Cancel" : "+ Add Student"}
+              <label>
 
-        </button>
+                Full name *
 
-      </div>
+                <input
 
+                  name="name"
 
+                  value={form.name}
 
-      {showForm && (
+                  onChange={changeForm}
 
-        <section className="students-card">
+                  required
 
-          <h2>Add student</h2>
+                />
 
+              </label>
 
+              <label>
 
-          <form onSubmit={addStudent}>
+                Email *
 
-            <div className="students-form-grid">
+                <input
 
-              <label>
+                  name="email"
 
-                Student ID *
+                  type="email"
 
-                <input
+                  value={form.email}
 
-                  name="studentId"
-
-                  value={form.studentId}
-
-                  onChange={changeForm}
-
-                  required
-
-                />
-
-              </label>
-
-
-
-              <label>
-
-                Full name *
-
-                <input
-
-                  name="name"
-
-                  value={form.name}
-
-                  onChange={changeForm}
-
-                  required
-
-                />
-
-              </label>
-
-
-
-              <label>
-
-                Email *
-
-                <input
-
-                  name="email"
-
-                  type="email"
-
-                  value={form.email}
-
-                  onChange={changeForm}
+                  onChange={changeForm}
 required
 
-                />
+                />
 
-              </label>
+              </label>
 
+              <label>
 
+                Department *
 
-              <label>
+                <input
 
-                Department *
+                  name="department"
 
-                <input
+                  value={form.department}
 
-                  name="department"
-
-                  value={form.department}
-
-                  onChange={changeForm}
+                  onChange={changeForm}
 required
 
-                />
+                />
 
-              </label>
+              </label>
 
+              <label>
 
+                Year *
 
-              <label>
+                <select name="year" value={form.year} onChange={changeForm}>
 
-                Year *
+                  <option value="I">I Year</option>
 
-                <select name="year" value={form.year} onChange={changeForm}>
+                  <option value="II">II Year</option>
 
-                  <option value="I">I Year</option>
+                  <option value="III">III Year</option>
 
-                  <option value="II">II Year</option>
+                  <option value="IV">IV Year</option>
 
-                  <option value="III">III Year</option>
+                </select>
 
-                  <option value="IV">IV Year</option>
+              </label>
 
-                </select>
+              <label>
 
-              </label>
+                Section *
 
+                <input
 
+                  name="section"
 
-              <label>
+                  value={form.section}
 
-                Section *
+                  onChange={changeForm}
 
-                <input
+                  required
 
-                  name="section"
+                />
 
-                  value={form.section}
+              </label>
 
-                  onChange={changeForm}
+            </div>
 
-                  required
+            <div className="face-registration">
 
-                />
+              <h3>Student face registration</h3>
 
-              </label>
+              <p>Capture a clear, front-facing image with the student's consent.</p>
 
-            </div>
+              {cameraOpen && (
 
+                <div className="face-camera">
 
+                  <video ref={videoRef} autoPlay muted playsInline />
 
-            <div className="face-registration">
+                  <div className="face-camera-actions">
 
-              <h3>Student face registration</h3>
+                    <button
 
-              <p>Capture a clear, front-facing image with the student's consent.</p>
+                      className="students-button students-button-primary"
 
+                      type="button"
 
+                      onClick={captureFace}
 
-              {cameraOpen && (
+                    >
 
-                <div className="face-camera">
+                      Capture photo
 
-                  <video ref={videoRef} autoPlay muted playsInline />
+                    </button>
 
+                    <button
 
+                      className="students-button students-button-secondary"
 
-                  <div className="face-camera-actions">
+                      type="button"
 
-                    <button
+                      onClick={closeCamera}
 
-                      className="students-button students-button-primary"
+                    >
 
-                      type="button"
+                      Close camera
 
-                      onClick={captureFace}
+                    </button>
 
-                    >
+                  </div>
 
-                      Capture photo
+                </div>
 
-                    </button>
+              )}
 
+              {capturedFace && (
 
+                <div className="face-captured">
 
-                    <button
+                  <img src={capturedFace} alt="Captured student face" />
 
-                      className="students-button students-button-secondary"
+                  <button
 
-                      type="button"
+                    className="students-button students-button-secondary"
 
-                      onClick={closeCamera}
+                    type="button"
 
-                    >
+                    onClick={openCamera}
 
-                      Close camera
+                  >
 
-                    </button>
+                    Retake photo
 
-                  </div>
+                  </button>
 
-                </div>
+                </div>
 
-              )}
+              )}
 
+              {!cameraOpen && !capturedFace && (
 
+                <button
 
-              {capturedFace && (
+                  className="students-button students-button-primary"
 
-                <div className="face-captured">
+                  type="button"
 
-                  <img src={capturedFace} alt="Captured student face" />
+                  onClick={openCamera}
 
+                >
 
+                  Open camera
 
-                  <button
+                </button>
 
-                    className="students-button students-button-secondary"
+              )}
 
-                    type="button"
+              {faceMessage && <p className="face-message">{faceMessage}</p>}
 
-                    onClick={openCamera}
+              <canvas ref={canvasRef} hidden />
 
-                  >
+            </div>
 
-                    Retake photo
+            {error && <p className="students-error">{error}</p>}
 
-                  </button>
+            <div className="students-form-actions">
 
-                </div>
+              <button
 
-              )}
+                className="students-button students-button-secondary"
 
+                type="button"
 
+                onClick={() => {
 
-              {!cameraOpen && !capturedFace && (
+                  closeCamera();
 
-                <button
+                  setShowForm(false);
 
-                  className="students-button students-button-primary"
+                  setCapturedFace(null);
 
-                  type="button"
+                  setError("");
 
-                  onClick={openCamera}
+                  setFaceMessage("");
 
-                >
+                }}
 
-                  Open camera
+              >
 
-                </button>
+                Cancel
 
-              )}
+              </button>
 
+              <button
 
+                className="students-button students-button-primary"
 
-              {faceMessage && <p className="face-message">{faceMessage}</p>}
+                type="submit"
 
+                disabled={faceRegistering}
 
+              >
 
-              <canvas ref={canvasRef} hidden />
+                {faceRegistering ? "Registering face..." : "Register face & save"}
 
-            </div>
+              </button>
 
+            </div>
 
+          </form>
 
-            {error && <p className="students-error">{error}</p>}
+        </section>
 
+      )}
 
+      <section className="students-card">
 
-            <div className="students-form-actions">
+        <div className="students-list-heading">
 
-              <button
+          <div>
 
-                className="students-button students-button-secondary"
+            <h2>Student list</h2>
 
-                type="button"
+            <p>{students.length} students registered in this browser</p>
 
-                onClick={() => {
+          </div>
 
-                  closeCamera();
+          <input
 
-                  setShowForm(false);
+            className="students-search"
 
-                  setCapturedFace(null);
+            type="search"
 
-                  setError("");
+            placeholder="Search students..."
 
-                  setFaceMessage("");
+            value={search}
 
-                }}
+            onChange={(e) => setSearch(e.target.value)}
 
-              >
+          />
 
-                Cancel
+        </div>
 
-              </button>
+        {filteredStudents.length === 0 ? (
 
+          <div className="students-empty">
 
+            <h3>No students found</h3>
 
-              <button
+            <p>Add a student or change your search.</p>
 
-                className="students-button students-button-primary"
+          </div>
 
-                type="submit"
+        ) : (
 
-                disabled={faceRegistering}
+          <div className="students-table-wrap">
 
-              >
+            <table className="students-table">
 
-                {faceRegistering ? "Registering face..." : "Register face & save"}
+              <thead>
 
-              </button>
+                <tr>
 
-            </div>
+                  <th>Student ID</th>
 
-          </form>
+                  <th>Name</th>
 
-        </section>
+                  <th>Email</th>
 
-      )}
+                  <th>Class</th>
 
+                </tr>
 
+              </thead>
 
-      <section className="students-card">
+              <tbody>
 
-        <div className="students-list-heading">
+                {filteredStudents.map((s, i) => (
 
-          <div>
+                  <tr key={getStudentId(s) || i}>
 
-            <h2>Student list</h2>
+                    <td className="students-id">{getStudentId(s)}</td>
 
-            <p>{students.length} students registered in this browser</p>
+                    <td>{getName(s)}</td>
 
-          </div>
+                    <td>{s.email || "—"}</td>
 
+                    <td>{s.className || s.class || "—"}</td>
 
+                    <td>
 
-          <input
+                      <div className="students-row-actions">
 
-            className="students-search"
+                        <button
 
-            type="search"
+                          type="button"
 
-            placeholder="Search students..."
+                          className="students-button students-button-danger"
 
-            value={search}
+                          onClick={() => deleteStudent(getStudentId(s))}
 
-            onChange={(e) => setSearch(e.target.value)}
+                        >
 
-          />
+                          Delete
 
-        </div>
+                        </button>
 
+                      </div>
 
+                    </td>
 
-        {filteredStudents.length === 0 ? (
+                  </tr>
 
-          <div className="students-empty">
+                ))}
 
-            <h3>No students found</h3>
+              </tbody>
 
-            <p>Add a student or change your search.</p>
+            </table>
 
-          </div>
+          </div>
 
-        ) : (
+        )}
 
-          <div className="students-table-wrap">
+      </section>
 
-            <table className="students-table">
+    </div>
 
-              <thead>
-
-                <tr>
-
-                  <th>Student ID</th>
-
-                  <th>Name</th>
-
-                  <th>Email</th>
-
-                  <th>Class</th>
-
-
-
-                </tr>
-
-              </thead>
-
-
-
-              <tbody>
-
-                {filteredStudents.map((s, i) => (
-
-                  <tr key={getStudentId(s) || i}>
-
-                    <td className="students-id">{getStudentId(s)}</td>
-
-                    <td>{getName(s)}</td>
-
-                    <td>{s.email || "—"}</td>
-
-                    <td>{s.className || s.class || "—"}</td>
-
-                    <td>
-
-                      <div className="students-row-actions">
-
-
-
-
-
-                        <button
-
-                          type="button"
-
-                          className="students-button students-button-danger"
-
-                          onClick={() => deleteStudent(getStudentId(s))}
-
-                        >
-
-                          Delete
-
-                        </button>
-
-                      </div>
-
-                    </td>
-
-                  </tr>
-
-                ))}
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-        )}
-
-      </section>
-
-
-
-
-
-    </div>
-
-  );
+  );
 
 }

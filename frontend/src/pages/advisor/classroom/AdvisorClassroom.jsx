@@ -1,8 +1,23 @@
+
 import { useState, useRef, useCallback } from "react";
 import CameraView from "../../../components/camera/CameraView.jsx";
+import { useAuth } from "../../../context/AuthContext";
 import "./AdvisorClassroom.css";
 
 function AdvisorClassroom() {
+  const { user } = useAuth();
+
+  const classId = String(user?.assignedClassId ?? "").trim();
+  const className = String(user?.className ?? "").trim();
+  const advisorId = String(user?.uid ?? "").trim();
+
+  const institutionId = String(
+    user?.institutionId ??
+      user?.institution_id ??
+      user?.institution?.id ??
+      ""
+  ).trim();
+
   const [cameraActive, setCameraActive] = useState(false);
   const [message, setMessage] = useState("Ready to start attendance.");
   const [faces, setFaces] = useState([]);
@@ -14,6 +29,12 @@ function AdvisorClassroom() {
   const processingRef = useRef(false);
 
   const handleStartSession = () => {
+    if (!classId) {
+      setApiError("No classroom is assigned to this advisor.");
+      setMessage("Unable to start attendance.");
+      return;
+    }
+
     setFaces([]);
     setFaceCount(0);
     setApiError("");
@@ -38,55 +59,86 @@ function AdvisorClassroom() {
     setApiError(String(error));
   };
 
-  const handleFrameCapture = useCallback(async (blob) => {
-    if (!blob || processingRef.current) return;
+  const handleFrameCapture = useCallback(
+    async (blob) => {
+      if (!blob || processingRef.current) return;
 
-    processingRef.current = true;
-    setProcessing(true);
-    setApiError("");
-
-    try {
-      const formData = new FormData();
-      formData.append("frame", blob, "classroom-frame.jpg");
-
-      const response = await fetch(
-        "http://localhost:5000/api/classroom/frame",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Face recognition failed.");
+      // Institution ID is optional temporarily.
+      if (!classId || !advisorId) {
+        setApiError(
+          "Advisor identity or assigned classroom is missing."
+        );
+        return;
       }
 
-      const detectedFaces = Array.isArray(result.faces)
-        ? result.faces
-        : [];
+      processingRef.current = true;
+      setProcessing(true);
+      setApiError("");
 
-      setFaces(detectedFaces);
-      setFaceCount(
-        typeof result.face_count === "number"
-          ? result.face_count
-          : detectedFaces.length
-      );
+      try {
+        const formData = new FormData();
 
-      setLastUpdated(new Date());
-      setMessage("Live recognition is running.");
-    } catch (error) {
-      console.error("Recognition error:", error);
-      setApiError(
-        error.message || "Unable to connect to the recognition service."
-      );
-      setMessage("Recognition service unavailable.");
-    } finally {
-      processingRef.current = false;
-      setProcessing(false);
-    }
-  }, []);
+        formData.append(
+          "frame",
+          blob,
+          "classroom-frame.jpg"
+        );
+
+        // Send institutionId only when it is available.
+        if (institutionId) {
+          formData.append("institutionId", institutionId);
+        }
+
+        formData.append("classId", classId);
+        formData.append("className", className);
+        formData.append("advisorId", advisorId);
+
+        const response = await fetch(
+          "http://localhost:5000/api/classroom/frame",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(
+            result.message || "Face recognition failed."
+          );
+        }
+
+        const detectedFaces = Array.isArray(result.faces)
+          ? result.faces
+          : [];
+
+        setFaces(detectedFaces);
+
+        setFaceCount(
+          typeof result.face_count === "number"
+            ? result.face_count
+            : detectedFaces.length
+        );
+
+        setLastUpdated(new Date());
+        setMessage("Live recognition is running.");
+      } catch (error) {
+        console.error("Recognition error:", error);
+
+        setApiError(
+          error.message ||
+            "Unable to connect to the recognition service."
+        );
+
+        setMessage("Recognition service unavailable.");
+      } finally {
+        processingRef.current = false;
+        setProcessing(false);
+      }
+    },
+    [classId, className, advisorId, institutionId]
+  );
 
   const recognizedFaces = faces.filter(
     (face) => face.recognized && face.student_id
@@ -100,16 +152,29 @@ function AdvisorClassroom() {
     <main className="advisor-classroom">
       <header className="classroom-header">
         <div>
-          <span className="classroom-eyebrow">ADVISOR PORTAL</span>
+          <span className="classroom-eyebrow">
+            ADVISOR PORTAL
+          </span>
+
           <h1>Classroom Attendance</h1>
+
           <p>
-            Monitor detected faces and review recognition results in real time.
+            Monitor detected faces and review recognition
+            results in real time.
           </p>
+
+          {className && (
+            <p>
+              <strong>Assigned classroom:</strong> {className}
+            </p>
+          )}
         </div>
 
         <span
           className={`session-badge ${
-            cameraActive ? "session-active" : "session-inactive"
+            cameraActive
+              ? "session-active"
+              : "session-inactive"
           }`}
         >
           <span className="status-dot" />
@@ -168,16 +233,24 @@ function AdvisorClassroom() {
 
             {!cameraActive && (
               <div className="camera-overlay">
-                <div className="camera-overlay-icon">📷</div>
+                <div className="camera-overlay-icon">
+                  📷
+                </div>
+
                 <h3>Camera is stopped</h3>
-                <p>Start the session to begin face recognition.</p>
+
+                <p>
+                  Start the session to begin face recognition.
+                </p>
               </div>
             )}
           </div>
 
           <div className="camera-footer">
             <div>
-              <span className="footer-label">Session status</span>
+              <span className="footer-label">
+                Session status
+              </span>
               <p>{message}</p>
             </div>
 
@@ -212,8 +285,10 @@ function AdvisorClassroom() {
           {apiError && (
             <div className="error-message" role="alert">
               <strong>Recognition error:</strong> {apiError}
+
               <p>
-                Check that the Python AI service and Node.js backend are running.
+                Check that the Python AI service and Node.js
+                backend are running.
               </p>
             </div>
           )}
@@ -241,19 +316,22 @@ function AdvisorClassroom() {
 
           <div className="summary-row">
             <span>Unknown faces</span>
-            <strong className="text-red">{unknownCount}</strong>
+            <strong className="text-red">
+              {unknownCount}
+            </strong>
           </div>
 
           <div className="summary-divider" />
 
           <p className="summary-note">
-            Recognition scores indicate similarity to a registered face
-            embedding. They are not attendance confirmation or probability
-            percentages.
+            Recognition scores indicate similarity to a
+            registered face embedding. They are not attendance
+            confirmation or probability percentages.
           </p>
 
           <div className="last-updated">
             <span>Last updated</span>
+
             <strong>
               {lastUpdated
                 ? lastUpdated.toLocaleTimeString()
@@ -267,22 +345,28 @@ function AdvisorClassroom() {
         <div className="section-heading results-heading">
           <div>
             <h2>Live Face Recognition Results</h2>
+
             <p>
-              Student IDs and match scores from the latest processed frame
+              Student IDs and match scores from the latest
+              processed frame
             </p>
           </div>
 
           <span className="result-count">
-            {faces.length} {faces.length === 1 ? "face" : "faces"}
+            {faces.length}{" "}
+            {faces.length === 1 ? "face" : "faces"}
           </span>
         </div>
 
         {faces.length === 0 ? (
           <div className="empty-results">
             <div className="empty-icon">◎</div>
+
             <h3>No faces detected yet</h3>
+
             <p>
-              Start attendance and position faces clearly in front of the camera.
+              Start attendance and position faces clearly
+              in front of the camera.
             </p>
           </div>
         ) : (
@@ -291,8 +375,13 @@ function AdvisorClassroom() {
               const matched = Boolean(
                 face.recognized && face.student_id
               );
+
               const score = Number(face.confidence);
-              const validScore = Number.isFinite(score);
+              const validScore =
+                face.confidence !== null &&
+                face.confidence !== undefined &&
+                face.confidence !== "" &&
+                Number.isFinite(score);
 
               return (
                 <article
@@ -308,7 +397,9 @@ function AdvisorClassroom() {
 
                     <span
                       className={`recognition-status ${
-                        matched ? "status-matched" : "status-unknown"
+                        matched
+                          ? "status-matched"
+                          : "status-unknown"
                       }`}
                     >
                       {matched ? "Recognized" : "Unknown"}
@@ -316,13 +407,18 @@ function AdvisorClassroom() {
                   </div>
 
                   <h3 className="student-id">
-                    {matched ? face.student_id : "Unknown Person"}
+                    {matched
+                      ? face.student_id
+                      : "Unknown Person"}
                   </h3>
 
                   <div className="score-row">
                     <span>Match score</span>
+
                     <strong>
-                      {validScore ? score.toFixed(4) : "N/A"}
+                      {validScore
+                        ? score.toFixed(4)
+                        : "N/A"}
                     </strong>
                   </div>
 
@@ -336,7 +432,10 @@ function AdvisorClassroom() {
                       style={{
                         width: `${
                           validScore
-                            ? Math.max(0, Math.min(100, score * 100))
+                            ? Math.max(
+                                0,
+                                Math.min(100, score * 100)
+                              )
                             : 0
                         }%`,
                       }}
@@ -356,8 +455,8 @@ function AdvisorClassroom() {
       </section>
 
       <p className="attendance-disclaimer">
-        These are live recognition results, not saved attendance records.
-        Attendance must be recorded through a backend endpoint.
+        Live recognition results are displayed here. Attendance
+        and classroom validation must be enforced by the backend.
       </p>
     </main>
   );

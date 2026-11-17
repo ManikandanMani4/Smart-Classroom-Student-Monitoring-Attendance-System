@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   createUserWithEmailAndPassword,
   updateProfile,
+  signOut,
 } from "firebase/auth";
 import {
   doc,
@@ -33,7 +34,6 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // Update form fields.
   const updateField = (event) => {
     const { name, value } = event.target;
 
@@ -45,7 +45,6 @@ export default function Register() {
     setMessage("");
   };
 
-  // Generate class name automatically.
   const getClassName = () => {
     const yearPrefix = {
       "1st Year": "I",
@@ -66,9 +65,11 @@ export default function Register() {
       .join(" ");
   };
 
-  // Create advisor account.
   const handleRegister = async (event) => {
     event.preventDefault();
+
+    if (loading) return;
+
     setMessage("");
 
     const name = form.name.trim();
@@ -77,6 +78,7 @@ export default function Register() {
     const department = form.department.trim();
     const section = form.section.trim().toUpperCase();
     const roomNo = form.roomNo.trim();
+    const className = getClassName();
 
     if (name.length < 2) {
       setMessage("Please enter your full name.");
@@ -88,18 +90,8 @@ export default function Register() {
       return;
     }
 
-    if (!department) {
-      setMessage("Please enter your department.");
-      return;
-    }
-
-    if (!section) {
-      setMessage("Please enter your section.");
-      return;
-    }
-
-    if (!roomNo) {
-      setMessage("Please enter your room number.");
+    if (!department || !section || !roomNo) {
+      setMessage("Please complete all classroom details.");
       return;
     }
 
@@ -115,19 +107,45 @@ export default function Register() {
 
     setLoading(true);
 
-    try {
-      const credential =
-        await createUserWithEmailAndPassword(
-          auth,
-          email,
-          form.password
-        );
+    let firebaseUser = null;
+    let profileSaved = false;
 
-      const firebaseUser = credential.user;
+    const logDuration = (step, start) => {
+      console.info(
+        `[Advisor Registration] ${step}: ${
+          Math.round(performance.now() - start)
+        } ms`
+      );
+    };
+
+    const start = performance.now();
+
+    try {
+      // Step 1: Create Firebase Authentication account.
+      console.info("[Advisor Registration] Creating account...");
+
+      const authStart = performance.now();
+
+      const credential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        form.password
+      );
+
+      firebaseUser = credential.user;
+      logDuration("Authentication account created", authStart);
+
+      // Step 2: Save the display name.
+      const profileStart = performance.now();
 
       await updateProfile(firebaseUser, {
         displayName: name,
       });
+
+      logDuration("Display name updated", profileStart);
+
+      // Step 3: Create the pending advisor profile.
+      const firestoreStart = performance.now();
 
       await setDoc(doc(db, "users", firebaseUser.uid), {
         uid: firebaseUser.uid,
@@ -138,36 +156,79 @@ export default function Register() {
         department,
         academicYear: form.year,
         section,
-        className: getClassName(),
+        className,
         roomNo,
         assignedClassId: null,
         approvalStatus: "pending",
         createdAt: serverTimestamp(),
       });
 
-      navigate("/advisor/dashboard", {
+      profileSaved = true;
+      logDuration("Firestore profile saved", firestoreStart);
+      logDuration("Registration completed", start);
+
+      // Step 4: Sign out so the pending advisor cannot access
+      // protected advisor pages.
+      await signOut(auth);
+      firebaseUser = null;
+
+      // Step 5: Send the advisor to the login page.
+      navigate("/login", {
         replace: true,
+        state: { registrationSubmitted: true },
       });
     } catch (error) {
-      console.error("Advisor registration failed:", error);
+      console.error("[Advisor Registration] Failed:", {
+        code: error.code,
+        message: error.message,
+      });
 
-      const errors = {
-        "auth/email-already-in-use":
-          "This email address is already registered.",
-        "auth/invalid-email":
-          "Please enter a valid email address.",
-        "auth/weak-password":
-          "Choose a stronger password.",
-        "auth/network-request-failed":
-          "Network error. Check your internet connection.",
-        "permission-denied":
-          "Unable to save your profile. Check your Firestore security rules.",
-      };
+      if (profileSaved) {
+        // The account and profile exist. Do not delete them because
+        // only sign-out or navigation may have failed.
+        setMessage(
+          "Your registration was saved and is awaiting Admin approval. " +
+          "Please return to the login page."
+        );
+      } else {
+        // If Firestore failed after account creation, try to clean up
+        // the newly created account. Do not hide cleanup failures.
+        if (firebaseUser) {
+          try {
+            await firebaseUser.delete();
+          } catch (cleanupError) {
+            console.error(
+              "[Advisor Registration] Account cleanup failed:",
+              cleanupError.code,
+              cleanupError.message
+            );
+          }
+        }
 
-      setMessage(
-        errors[error.code] ||
-          "Registration failed. Please check Firebase and try again."
-      );
+        const messages = {
+          "auth/email-already-in-use":
+            "This email address is already registered.",
+          "auth/invalid-email":
+            "Please enter a valid email address.",
+          "auth/weak-password":
+            "Choose a stronger password.",
+          "auth/network-request-failed":
+            "Network error. Check your internet connection.",
+          "auth/operation-not-allowed":
+            "Email/password sign-in is not enabled in Firebase.",
+          "permission-denied":
+            "Firestore denied the profile write. Check your security rules.",
+          "auth/too-many-requests":
+            "Too many attempts. Please try again later.",
+        };
+
+        setMessage(
+          messages[error.code] ||
+            `${error.code || "Registration error"}: ${
+              error.message || "Please try again."
+            }`
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -195,7 +256,6 @@ export default function Register() {
       </header>
 
       <section className="register-layout">
-        {/* Left introduction */}
         <div className="register-intro">
           <div className="register-eyebrow">
             <span className="register-status-dot" />
@@ -245,7 +305,6 @@ export default function Register() {
           </div>
         </div>
 
-        {/* Registration form */}
         <div className="register-form-card">
           <div className="register-card-heading">
             <div className="register-step-label">
@@ -309,10 +368,7 @@ export default function Register() {
               </div>
 
               <div className="register-input-group register-full-width">
-                <label
-                  className="register-label"
-                  htmlFor="reg-department"
-                >
+                <label className="register-label" htmlFor="reg-department">
                   Department
                 </label>
                 <input
@@ -359,7 +415,6 @@ export default function Register() {
                 />
               </div>
 
-              {/* Class name and room number side by side */}
               <div className="register-input-group">
                 <label className="register-label" htmlFor="reg-class">
                   Class name (auto-generated)
@@ -408,7 +463,7 @@ export default function Register() {
                 <button
                   type="button"
                   className="register-password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowPassword((value) => !value)}
                 >
                   {showPassword ? "Hide" : "Show"}
                 </button>
@@ -428,12 +483,13 @@ export default function Register() {
                   value={form.confirmPassword}
                   onChange={updateField}
                   autoComplete="new-password"
+                  minLength={8}
                   required
                 />
                 <button
                   type="button"
                   className="register-password-toggle"
-                  onClick={() => setShowConfirm(!showConfirm)}
+                  onClick={() => setShowConfirm((value) => !value)}
                 >
                   {showConfirm ? "Hide" : "Show"}
                 </button>
@@ -452,9 +508,7 @@ export default function Register() {
               disabled={loading}
             >
               <span>
-                {loading
-                  ? "Creating account..."
-                  : "Create advisor account"}
+                {loading ? "Creating account..." : "Create advisor account"}
               </span>
               <span className="register-submit-arrow">→</span>
             </button>

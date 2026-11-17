@@ -21,6 +21,7 @@ data/test_images/
 .env
 
 
+
 # Camera frames
 backend/uploads/
 
@@ -28,3 +29,5 @@ backend/uploads/
 frontend/src/firebase.js
 
 backend/serviceAccountKey.json
+
+firebase-credentials/serviceAccountKey.json

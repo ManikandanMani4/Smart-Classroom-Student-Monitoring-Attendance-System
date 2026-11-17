@@ -1,12 +1,48 @@
-
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
+const admin = require("firebase-admin");
+
+const serviceAccount = require(
+  path.resolve(
+    __dirname,
+    "../firebase-credentials/serviceAccountKey.json"
+  )
+);
+
+admin.initializeApp({
+  credential: admin.cert(serviceAccount),
+});
+
+const db = require("firebase-admin/firestore").getFirestore();
+
+console.log("Firebase Admin initialized successfully.");
 
 const app = express();
 const PORT = 5000;
+
+app.get("/api/test-firestore", async (req, res) => {
+  try {
+    await db.collection("system_checks").doc("backend_connection").set({
+      status: "connected",
+      checkedAt: new Date().toISOString(),
+    });
+
+    res.json({
+      success: true,
+      message: "Firestore read/write connection successful.",
+    });
+  } catch (error) {
+    console.error("Firestore test failed:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Firestore connection failed.",
+    });
+  }
+});
 
 const AI_URL = "http://127.0.0.1:8000/api/ai/recognize";
 const REGISTER_URL = "http://127.0.0.1:8000/api/ai/register";
@@ -27,12 +63,18 @@ const ATTENDANCE_DIR = path.join(
   "attendance"
 );
 
+const ALERTS_DIR = path.join(__dirname, "data", "alerts");
+const ALERTS_FILE = path.join(ALERTS_DIR, "alerts.json");
+
+const UNKNOWN_ALERT_COOLDOWN_MS = 60 * 1000;
+const WRONG_CLASS_ALERT_COOLDOWN_MS = 60 * 1000;
+
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json({ limit: "10mb" }));
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }
+  limits: { fileSize: 5 * 1024 * 1024 },
 });
 
 // --------------------------------------------------
@@ -71,7 +113,7 @@ async function readJsonFile(filePath, fallback) {
 
 async function writeJsonFile(filePath, data) {
   await fs.promises.mkdir(path.dirname(filePath), {
-    recursive: true
+    recursive: true,
   });
 
   const temporaryPath = `${filePath}.tmp`;
@@ -105,6 +147,95 @@ async function getAttendanceRecords(date) {
   return records;
 }
 
+async function getAlerts() {
+  const alerts = await readJsonFile(ALERTS_FILE, []);
+
+  if (!Array.isArray(alerts)) {
+    throw new Error("Alert file must contain a JSON array.");
+  }
+
+  return alerts;
+}
+
+async function saveAlerts(alerts) {
+  await writeJsonFile(ALERTS_FILE, alerts);
+}
+
+async function createClassroomAlert({
+  type,
+  title,
+  classId,
+  className,
+  advisorId,
+  location,
+  severity = "high",
+  cooldownMs = UNKNOWN_ALERT_COOLDOWN_MS,
+  studentId = null,
+  studentName = "",
+  registeredClassId = "",
+  registeredClassName = "",
+  detectedClassId = "",
+  detectedClassName = "",
+}) {
+  const alerts = await getAlerts();
+  const now = Date.now();
+
+  const duplicate = alerts.some((alert) => {
+    if (
+      alert.type !== type ||
+      String(alert.classId || "") !== String(classId || "") ||
+      String(alert.advisorId || "") !== String(advisorId || "") ||
+      alert.status === "dismissed"
+    ) {
+      return false;
+    }
+
+    if (
+      type === "WRONG_CLASSROOM_DETECTED" &&
+      String(alert.studentId || "") !== String(studentId || "")
+    ) {
+      return false;
+    }
+
+    const createdAt = new Date(alert.createdAt).getTime();
+
+    return (
+      Number.isFinite(createdAt) &&
+      now - createdAt < cooldownMs
+    );
+  });
+
+  if (duplicate) {
+    return null;
+  }
+
+  const alert = {
+    id: `alert_${now}_${Math.random().toString(36).slice(2, 9)}`,
+    type,
+    title,
+    classId: String(classId || ""),
+    className: String(className || ""),
+    advisorId: String(advisorId || ""),
+    location: String(location || className || "Unknown classroom"),
+    severity,
+    status: "unread",
+    studentId,
+    studentName,
+    registeredClassId,
+    registeredClassName,
+    detectedClassId,
+    detectedClassName,
+    createdAt: new Date(now).toISOString(),
+  };
+
+  alerts.unshift(alert);
+  await saveAlerts(alerts);
+
+  console.log("Classroom alert created:", title);
+
+  return alert;
+}
+
 // --------------------------------------------------
 // AUTOMATIC ATTENDANCE RECORDING
 // --------------------------------------------------
@@ -123,7 +254,7 @@ async function recordRecognizedFaces(faces) {
             face.student_id.trim()
         )
         .map((face) => face.student_id.trim().toUpperCase())
-    )
+    ),
   ];
 
   if (recognizedIds.length === 0) {
@@ -135,7 +266,7 @@ async function recordRecognizedFaces(faces) {
   const studentMap = new Map(
     students.map((student) => [
       String(student.student_id || "").trim().toUpperCase(),
-      student
+      student,
     ])
   );
 
@@ -145,13 +276,11 @@ async function recordRecognizedFaces(faces) {
   for (const studentId of recognizedIds) {
     const student = studentMap.get(studentId);
 
-    // Never create attendance for an unregistered student.
     if (!student) {
       console.warn("Recognized ID not in student registry:", studentId);
       continue;
     }
 
-    // One attendance entry per student per date.
     if (
       records.some(
         (record) =>
@@ -168,7 +297,7 @@ async function recordRecognizedFaces(faces) {
       subject: "",
       period: "",
       timestamp: now.toISOString(),
-      status: "Present"
+      status: "Present",
     });
 
     changed = true;
@@ -187,12 +316,252 @@ async function recordRecognizedFaces(faces) {
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "SmartClassroom backend is running."
+    message: "SmartClassroom backend is running.",
   });
+});
+// --------------------------------------------------
+// ATTENDANCE ROUTES
+// --------------------------------------------------
+
+app.get("/api/attendance", async (req, res) => {
+  try {
+    const date = String(req.query.date || "").trim();
+
+    if (!isValidDate(date)) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid date in YYYY-MM-DD format is required.",
+      });
+    }
+
+    const records = await getAttendanceRecords(date);
+
+    return res.json({
+      success: true,
+      date,
+      records,
+    });
+  } catch (error) {
+    console.error("Attendance retrieval failed:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve attendance records.",
+    });
+  }
 });
 
 // --------------------------------------------------
-// CLASSROOM FRAME RECOGNITION
+// STUDENT FACE REGISTRATION
+// Accept JSON image data from React and forward it to Python
+// --------------------------------------------------
+
+app.post("/api/ai/register", async (req, res) => {
+  try {
+    const {
+      institutionId,
+      studentId,
+      studentName,
+      image,
+      classId,
+      className,
+      advisorId,
+    } = req.body || {};
+
+    // Validate captured image
+    if (
+      typeof image !== "string" ||
+      !image.startsWith("data:image/")
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid student face image is required.",
+      });
+    }
+
+    if (!String(institutionId || "").trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Institution ID is required for student registration.",
+      });
+    }
+
+    if (!String(studentId || "").trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Student ID is required.",
+      });
+    }
+
+    if (!String(studentName || "").trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Student name is required.",
+      });
+    }
+
+    // Prepare JSON payload for Python
+    const payload = {
+      institutionId: String(institutionId).trim(),
+      studentId: String(studentId).trim().toUpperCase(),
+      studentName: String(studentName).trim(),
+      image,
+      classId: String(classId || ""),
+      className: String(className || ""),
+      advisorId: String(advisorId || ""),
+    };
+
+    console.log(
+      "[Face registration] Image received:",
+      Boolean(image)
+    );
+
+    console.log(
+      "[Face registration] Image length:",
+      image.length
+    );
+
+    console.log(
+      "[Face registration] Student ID:",
+      payload.studentId
+    );
+
+    // Forward JSON to Python AI service
+    const aiResponse = await fetch(REGISTER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await aiResponse.text();
+
+    let result;
+
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      console.error(
+        "AI registration service returned non-JSON:",
+        responseText.slice(0, 500)
+      );
+
+      return res.status(502).json({
+        success: false,
+        message: "The AI registration service returned invalid JSON.",
+      });
+    }
+
+    if (!aiResponse.ok) {
+      console.error("AI registration failed:", result);
+    }
+
+    return res.status(aiResponse.status).json(result);
+
+  } catch (error) {
+    console.error("Student registration failed:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Student registration failed.",
+      error: error.message,
+    });
+  }
+});
+
+// --------------------------------------------------
+// ALERT ROUTES
+// --------------------------------------------------
+
+app.get("/api/alerts", async (req, res) => {
+  try {
+    const { advisorId, classId, status } = req.query;
+    let alerts = await getAlerts();
+
+    if (advisorId) {
+      alerts = alerts.filter(
+        (alert) => String(alert.advisorId || "") === String(advisorId)
+      );
+    }
+
+    if (classId) {
+      alerts = alerts.filter(
+        (alert) => String(alert.classId || "") === String(classId)
+      );
+    }
+
+    if (status) {
+      alerts = alerts.filter(
+        (alert) => String(alert.status || "") === String(status)
+      );
+    }
+
+    return res.json({
+      success: true,
+      count: alerts.length,
+      alerts,
+    });
+  } catch (error) {
+    console.error("Alert retrieval failed:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve alerts.",
+    });
+  }
+});
+
+app.patch("/api/alerts/:id", async (req, res) => {
+  try {
+    const { status } = req.body || {};
+    const allowedStatuses = ["unread", "read", "resolved", "dismissed"];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid alert status.",
+      });
+    }
+
+    const alerts = await getAlerts();
+    const index = alerts.findIndex(
+      (alert) => String(alert.id) === String(req.params.id)
+    );
+
+    if (index === -1) {
+      return res.status(404).json({
+        success: false,
+        message: "Alert not found.",
+      });
+    }
+
+    alerts[index] = {
+      ...alerts[index],
+      status,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await saveAlerts(alerts);
+
+    return res.json({
+      success: true,
+      message: "Alert updated successfully.",
+      alert: alerts[index],
+    });
+  } catch (error) {
+    console.error("Alert update failed:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update alert.",
+    });
+  }
+});
+
+// --------------------------------------------------
+// CLASSROOM RECOGNITION
 // --------------------------------------------------
 
 app.post(
@@ -203,7 +572,23 @@ app.post(
       if (!req.file) {
         return res.status(400).json({
           success: false,
-          message: "No frame received."
+          message: "A camera frame is required.",
+        });
+      }
+
+      // institutionId is optional temporarily.
+      const institutionId = String(
+        req.body.institutionId || ""
+      ).trim();
+
+      const classId = String(req.body.classId || "").trim();
+      const className = String(req.body.className || "").trim();
+      const advisorId = String(req.body.advisorId || "").trim();
+
+      if (!classId || !advisorId) {
+        return res.status(400).json({
+          success: false,
+          message: "Class ID and advisor ID are required.",
         });
       }
 
@@ -212,252 +597,288 @@ app.post(
       formData.append(
         "frame",
         new Blob([req.file.buffer], {
-          type: req.file.mimetype || "image/jpeg"
+          type: req.file.mimetype || "image/jpeg",
         }),
-        req.file.originalname || "classroom-frame.jpg"
+        req.file.originalname || "frame.jpg"
       );
+
+      if (institutionId) {
+        formData.append("institutionId", institutionId);
+      }
 
       const aiResponse = await fetch(AI_URL, {
         method: "POST",
         body: formData,
-        signal: AbortSignal.timeout(30000)
       });
 
-      const result = await aiResponse.json().catch(() => null);
+      const responseText = await aiResponse.text();
+      let aiResult;
 
-      if (!result) {
+      try {
+        aiResult = JSON.parse(responseText);
+      } catch {
+        console.error("AI service returned non-JSON:", responseText);
+
         return res.status(502).json({
           success: false,
-          message: "Python AI service returned an invalid response."
+          message: "The AI service returned an invalid response.",
         });
       }
 
       if (!aiResponse.ok) {
-        return res.status(aiResponse.status).json(result);
+        console.error("AI recognition failed:", aiResult);
+
+        return res.status(aiResponse.status).json({
+          success: false,
+          message:
+            aiResult.message ||
+            aiResult.detail ||
+            "Face recognition failed.",
+        });
       }
 
-      if (result.success && Array.isArray(result.faces)) {
-        try {
-          await recordRecognizedFaces(result.faces);
-        } catch (error) {
-          console.error("Attendance storage error:", error.message);
+      const faces = Array.isArray(aiResult.faces)
+        ? aiResult.faces
+        : [];
 
-          return res.status(500).json({
-            success: false,
-            message: "Faces were recognized, but attendance could not be saved."
+      const students = await getStudents();
+      const studentMap = new Map(
+        students.map((student) => [
+          String(
+            student.student_id || student.studentId || ""
+          ).trim().toUpperCase(),
+          student,
+        ])
+      );
+
+      const allowedFaces = [];
+
+      for (const face of faces) {
+        const studentId = String(
+          face.student_id || face.studentId || ""
+        ).trim().toUpperCase();
+
+        const isRecognized =
+          face.recognized === true &&
+          Boolean(studentId) &&
+          !face.is_unknown;
+
+        if (!isRecognized) {
+          face.recognized = false;
+          face.student_name = "Unknown Person";
+          face.student_id = null;
+
+          await createClassroomAlert({
+            type: "UNKNOWN_PERSON_DETECTED",
+            title: "Unknown Person Detected",
+            classId,
+            className,
+            advisorId,
+            location: className || classId,
+            severity: "high",
+            cooldownMs: UNKNOWN_ALERT_COOLDOWN_MS,
           });
+
+          continue;
         }
+
+        const student = studentMap.get(studentId);
+
+        if (!student) {
+          face.recognized = false;
+          face.student_name = "Unknown Person";
+          face.student_id = null;
+
+          await createClassroomAlert({
+            type: "UNKNOWN_PERSON_DETECTED",
+            title: "Unknown Person Detected",
+            classId,
+            className,
+            advisorId,
+            location: className || classId,
+            severity: "high",
+            cooldownMs: UNKNOWN_ALERT_COOLDOWN_MS,
+          });
+
+          continue;
+        }
+
+        const registeredClassId = String(
+          student.classId || student.class_id || ""
+        ).trim();
+
+        const registeredClassName = String(
+          student.className || student.class_name || ""
+        ).trim();
+
+        const belongsToClass =
+          registeredClassId &&
+          registeredClassId.toLowerCase() === classId.toLowerCase();
+
+        if (!belongsToClass) {
+          face.recognized = true;
+          face.student_id = studentId;
+          face.student_name =
+            student.student_name ||
+            student.studentName ||
+            face.student_name ||
+            studentId;
+
+          await createClassroomAlert({
+            type: "WRONG_CLASSROOM_DETECTED",
+            title: "Student Detected in Wrong Classroom",
+            classId,
+            className,
+            advisorId,
+            location: className || classId,
+            severity: "medium",
+            cooldownMs: WRONG_CLASS_ALERT_COOLDOWN_MS,
+            studentId,
+            studentName: face.student_name,
+            registeredClassId,
+            registeredClassName,
+            detectedClassId: classId,
+            detectedClassName: className,
+          });
+
+          continue;
+        }
+
+        face.recognized = true;
+        face.student_id = studentId;
+        face.student_name =
+          student.student_name ||
+          student.studentName ||
+          face.student_name ||
+          studentId;
+
+        allowedFaces.push(face);
       }
 
-      return res.json(result);
-    } catch (error) {
-      console.error("Frame processing error:", error.message);
+      await recordRecognizedFaces(allowedFaces);
 
-      return res.status(502).json({
+      return res.json({
+        success: true,
+        message: "Classroom frame processed successfully.",
+        faces,
+        attendanceRecorded: allowedFaces.length,
+      });
+    } catch (error) {
+      console.error("Classroom frame processing failed:", error);
+
+      return res.status(500).json({
         success: false,
-        message: "Could not reach the Python AI service."
+        message: "Failed to process the classroom frame.",
+        error: error.message,
       });
     }
   }
 );
-
 // --------------------------------------------------
-// STUDENT FACE REGISTRATION
+// STUDENT REGISTRATION
 // --------------------------------------------------
 
-app.post("/api/ai/register", async (req, res) => {
+app.post("/api/ai/register", upload.single("image"), async (req, res) => {
   try {
-    const { studentId, studentName, image } = req.body || {};
-
-    if (
-      typeof studentId !== "string" ||
-      !studentId.trim() ||
-      typeof image !== "string" ||
-      !image.trim()
-    ) {
+    if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "Student ID and captured image are required."
+        message: "A student face image is required.",
       });
     }
 
+    const institutionId = String(
+      req.body.institutionId || ""
+    ).trim();
+
+    if (!institutionId) {
+      return res.status(400).json({
+        success: false,
+        message: "Institution ID is required for student registration.",
+      });
+    }
+
+    const formData = new FormData();
+
+    formData.append(
+      "image",
+      new Blob([req.file.buffer], {
+        type: req.file.mimetype || "image/jpeg",
+      }),
+      req.file.originalname || "student.jpg"
+    );
+
+    for (const [key, value] of Object.entries(req.body)) {
+      if (key !== "institutionId" && value != null) {
+        formData.append(key, String(value));
+      }
+    }
+
+    formData.append("institutionId", institutionId);
+
     const aiResponse = await fetch(REGISTER_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        studentId: studentId.trim(),
-        studentName:
-          typeof studentName === "string" ? studentName.trim() : "",
-        image
-      }),
-      signal: AbortSignal.timeout(30000)
+      body: formData,
     });
 
-    const result = await aiResponse.json().catch(() => null);
+    const responseText = await aiResponse.text();
+    let result;
 
-    if (!result) {
+    try {
+      result = JSON.parse(responseText);
+    } catch {
       return res.status(502).json({
         success: false,
-        message: "Python AI service returned an invalid response."
+        message: "The AI registration service returned invalid JSON.",
       });
     }
 
     return res.status(aiResponse.status).json(result);
   } catch (error) {
-    console.error("Registration error:", error.message);
-
-    return res.status(502).json({
-      success: false,
-      message: "Could not reach the Python AI service."
-    });
-  }
-});
-
-// --------------------------------------------------
-// PERMANENT STUDENT DELETION
-// --------------------------------------------------
-
-app.delete("/api/students/:studentId", async (req, res) => {
-  const studentId = String(req.params.studentId || "").trim().toUpperCase();
-
-  if (!/^[A-Z0-9_-]{1,50}$/.test(studentId)) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid student ID."
-    });
-  }
-
-  try {
-    const students = await getStudents();
-
-    const studentExists = students.some(
-      (student) =>
-        String(student.student_id || "").trim().toUpperCase() === studentId
-    );
-
-    const embeddingPath = path.join(
-      AI_SERVICE_DIR,
-      "data",
-      "embeddings",
-      `${studentId}.json`
-    );
-
-    const embeddingExists = fs.existsSync(embeddingPath);
-
-    if (!studentExists && !embeddingExists) {
-      return res.status(404).json({
-        success: false,
-        message: "Student was not found."
-      });
-    }
-
-    // First delete the AI registry entry and face embedding.
-    const aiResponse = await fetch(
-      `${AI_DELETE_URL}/${encodeURIComponent(studentId)}`,
-      {
-        method: "DELETE",
-        signal: AbortSignal.timeout(30000)
-      }
-    );
-
-    const aiResult = await aiResponse.json().catch(() => null);
-
-    if (!aiResponse.ok) {
-      return res.status(aiResponse.status).json({
-        success: false,
-        message:
-          aiResult?.message ||
-          "AI service could not delete the student's face data."
-      });
-    }
-
-    // Remove the student's attendance from every dated attendance file.
-    await fs.promises.mkdir(ATTENDANCE_DIR, { recursive: true });
-
-    const files = await fs.promises.readdir(ATTENDANCE_DIR);
-    let deletedAttendanceRecords = 0;
-
-    for (const filename of files) {
-      if (!/^\d{4}-\d{2}-\d{2}\.json$/.test(filename)) {
-        continue;
-      }
-
-      const filePath = path.join(ATTENDANCE_DIR, filename);
-      const records = await readJsonFile(filePath, []);
-
-      if (!Array.isArray(records)) {
-        throw new Error(`Invalid attendance file: ${filename}`);
-      }
-
-      const filteredRecords = records.filter((record) => {
-        const matches =
-          String(record.studentId || "").trim().toUpperCase() === studentId;
-
-        if (matches) {
-          deletedAttendanceRecords++;
-        }
-
-        return !matches;
-      });
-
-      if (filteredRecords.length !== records.length) {
-        await writeJsonFile(filePath, filteredRecords);
-      }
-    }
-
-    console.log(
-      `Permanently deleted student ${studentId}; removed ${deletedAttendanceRecords} attendance record(s).`
-    );
-
-    return res.json({
-      success: true,
-      studentId,
-      deletedAttendanceRecords,
-      message: "Student face data and attendance history deleted."
-    });
-  } catch (error) {
-    console.error("Permanent student deletion error:", error.message);
+    console.error("Student registration failed:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Student deletion was incomplete. Check the backend and AI service logs."
+      message: "Student registration failed.",
+      error: error.message,
     });
   }
 });
 
 // --------------------------------------------------
-// GET ATTENDANCE FOR A DATE
+// STUDENT REGISTRY
 // --------------------------------------------------
 
-
-/* --------------------------------------------------
-   SAVE OR UPDATE MANUAL ATTENDANCE
--------------------------------------------------- */
-
-app.post("/api/attendance", async (req, res) => {
+app.get("/api/students", async (req, res) => {
   try {
-    const { studentId, date, status } = req.body || {};
+    const students = await getStudents();
 
-    const normalizedId = String(studentId || "")
-      .trim()
-      .toUpperCase();
+    return res.json({
+      success: true,
+      students,
+    });
+  } catch (error) {
+    console.error("Student retrieval failed:", error);
 
-    const normalizedStatus = String(status || "")
-      .trim()
-      .toLowerCase();
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve students.",
+    });
+  }
+});
 
-    if (!normalizedId || !isValidDate(date)) {
+// --------------------------------------------------
+// DELETE STUDENT
+// --------------------------------------------------
+
+app.delete("/api/students/:studentId", async (req, res) => {
+  try {
+    const studentId = String(req.params.studentId || "").trim();
+
+    if (!studentId) {
       return res.status(400).json({
         success: false,
-        message: "Student ID and valid date are required."
-      });
-    }
-
-    if (!["present", "absent"].includes(normalizedStatus)) {
-      return res.status(400).json({
-        success: false,
-        message: "Status must be Present or Absent."
+        message: "Student ID is required.",
       });
     }
 
@@ -465,176 +886,116 @@ app.post("/api/attendance", async (req, res) => {
 
     const student = students.find(
       (item) =>
-        String(item.student_id || "")
-          .trim()
-          .toUpperCase() === normalizedId
+        String(item.student_id || item.studentId || "").trim().toUpperCase() ===
+        studentId.toUpperCase()
     );
 
     if (!student) {
       return res.status(404).json({
         success: false,
-        message: "Student not found in the backend registry."
+        message: "Student not found.",
       });
     }
 
-    const records = await getAttendanceRecords(date);
+    const institutionId = String(
+      req.body?.institutionId || req.query?.institutionId || ""
+    ).trim();
 
-    const existingIndex = records.findIndex(
-      (record) =>
-        String(record.studentId || "")
-          .trim()
-          .toUpperCase() === normalizedId
-    );
-
-    const record = {
-      id: `${date}-${normalizedId}`,
-      studentId: normalizedId,
-      studentName: student.student_name || student.name || "",
-      subject: "",
-      period: "",
-      timestamp: new Date().toISOString(),
-      status:
-        normalizedStatus === "present" ? "Present" : "Absent",
-      source: "Manual"
-    };
-
-    if (existingIndex >= 0) {
-      records[existingIndex] = {
-        ...records[existingIndex],
-        ...record
-      };
-    } else {
-      records.push(record);
-    }
-
-    await writeJsonFile(attendanceFile(date), records);
-
-    console.log(
-      `Manual attendance saved: ${normalizedId} - ${record.status} (${date})`
-    );
-
-    return res.json({
-      success: true,
-      message: "Attendance saved successfully.",
-      record
-    });
-  } catch (error) {
-    console.error("Save attendance error:", error.message);
-
-    return res.status(500).json({
-      success: false,
-      message: "Could not save attendance."
-    });
-  }
-});
-
-app.get("/api/attendance", async (req, res) => {
-  try {
-    const date = req.query.date;
-
-    if (!isValidDate(date)) {
+    if (!institutionId) {
       return res.status(400).json({
         success: false,
-        message: "Provide a valid date in YYYY-MM-DD format."
+        message: "Institution ID is required to delete a student.",
       });
     }
 
-    const [students, records] = await Promise.all([
-      getStudents(),
-      getAttendanceRecords(date)
-    ]);
+    const deleteUrl =
+      `${AI_DELETE_URL}/${encodeURIComponent(studentId)}` +
+      `?institutionId=${encodeURIComponent(institutionId)}`;
 
-    const presentIds = new Set(
-      records
-        .filter((record) => record.status === "Present")
-        .map((record) => String(record.studentId).toUpperCase())
-    );
+    const aiResponse = await fetch(deleteUrl, {
+      method: "DELETE",
+    });
 
-    const absentCount = Math.max(
-      0,
-      students.filter(
-        (student) =>
-          !presentIds.has(
-            String(student.student_id || "").toUpperCase()
-          )
-      ).length
-    );
+    const responseText = await aiResponse.text();
+    let result;
+
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      result = { message: responseText };
+    }
+
+    if (!aiResponse.ok) {
+      return res.status(aiResponse.status).json({
+        success: false,
+        message: result.message || "AI service could not delete the student.",
+      });
+    }
 
     return res.json({
       success: true,
-      date,
-      totalStudents: students.length,
-      presentCount: presentIds.size,
-      absentCount,
-      classroomStatus: "Check classroom service",
-      activePeriod: "Not configured",
-      records: records.sort(
-        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-      )
+      message: "Student deletion request completed.",
+      result,
     });
   } catch (error) {
-    console.error("Get attendance error:", error.message);
+    console.error("Student deletion failed:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Could not load attendance records."
+      message: "Failed to delete student.",
+      error: error.message,
     });
   }
 });
-
 // --------------------------------------------------
-// DELETE ATTENDANCE HISTORY FOR A DATE
+// FIRESTORE CLASSROOM ROUTES
 // --------------------------------------------------
 
-app.delete("/api/attendance/history", async (req, res) => {
+app.get("/api/classes/:classId", async (req, res) => {
   try {
-    const date = req.query.date;
+    const classId = String(req.params.classId || "").trim();
 
-    if (!isValidDate(date)) {
+    if (!classId) {
       return res.status(400).json({
         success: false,
-        message: "Provide a valid date in YYYY-MM-DD format."
+        message: "Class ID is required.",
       });
     }
 
-    const filePath = attendanceFile(date);
+    const snapshot = await db
+      .collection("classes")
+      .doc(classId)
+      .get();
 
-    await fs.promises.mkdir(ATTENDANCE_DIR, {
-      recursive: true
-    });
-
-    await fs.promises.unlink(filePath).catch((error) => {
-      if (error.code !== "ENOENT") {
-        throw error;
-      }
-    });
+    if (!snapshot.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "Class not found.",
+      });
+    }
 
     return res.json({
       success: true,
-      message: `Attendance history for ${date} deleted.`
+      class: {
+        id: snapshot.id,
+        ...snapshot.data(),
+      },
     });
   } catch (error) {
-    console.error("Delete attendance error:", error.message);
+    console.error("Class retrieval failed:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Could not delete attendance history."
+      message: "Failed to retrieve class information.",
     });
   }
 });
 
 // --------------------------------------------------
-// START SERVER
+// SERVER START
 // --------------------------------------------------
 
 app.listen(PORT, () => {
-  console.log("======================================");
-  console.log("SmartClassroom Backend");
-  console.log(`Server: http://localhost:${PORT}`);
-  console.log("AI service: http://127.0.0.1:8000");
-  console.log("Attendance API: /api/attendance");
-  console.log("Frame recognition: /api/classroom/frame");
-  console.log("Face registration: /api/ai/register");
-  console.log("Student deletion: /api/students/:studentId");
-  console.log("======================================");
+  console.log(`SmartClassroom backend running at http://localhost:${PORT}`);
+  console.log(`AI recognition service: ${AI_URL}`);
 });
