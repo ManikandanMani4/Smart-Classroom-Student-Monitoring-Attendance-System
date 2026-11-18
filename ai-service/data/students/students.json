@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "student_id": "VSBEC922524205092",
+    "student_name": "Manikandan Mani",
+    "institution_id": "VSBEC",
+    "embedding_file": "data\\embeddings\\VSBEC922524205092.json",
+    "classId": "1792746556282",
+    "className": "IT-B",
+    "advisorId": "STJC4D3JstSQm6Ha8cNT4GQ0P7y1"
+  }
+]
